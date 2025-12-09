@@ -1,1972 +1,1999 @@
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  
-  <!-- Dynamic favicon (will be converted to PNG for PWA) -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='64' fill='%233498db'/%3E%3Cpath d='M96 40a56 56 0 1 1 0 112 56 56 0 0 1 0-112zm0 16a40 40 0 1 0 0 80 40 40 0 0 0 0-80zm-8 40a8 8 0 1 1 16 0 8 8 0 0 1-16 0z' fill='%23ffffff'/%3E%3C/svg%3E" sizes="any" type="image/svg+xml">
-  
-  <title>QRF Bluetooth Thermostat</title>
-  
-  <style>
-    /* Your existing CSS remains the same */
-    * {
-      box-sizing: border-box;
-    }
+  <!DOCTYPE html>
+  <html lang="zh">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Dynamic favicon (will be converted to PNG for PWA) -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='64' fill='%233498db'/%3E%3Cpath d='M96 40a56 56 0 1 1 0 112 56 56 0 0 1 0-112zm0 16a40 40 0 1 0 0 80 40 40 0 0 0 0-80zm-8 40a8 8 0 1 1 16 0 8 8 0 0 1-16 0z' fill='%23ffffff'/%3E%3C/svg%3E" sizes="any" type="image/svg+xml">
+    
+    <title>QRF Bluetooth Thermostat</title>
+    
+    <style>
+      /* Your existing CSS remains the same */
+      * {
+        box-sizing: border-box;
+      }
 
-    body {
-      font-family: "Segoe UI", Roboto, sans-serif;
-      background: #f5f7fa;
-      padding: 40px;
-      color: #333;
-      margin: 0;
-      min-height: 100vh;
-    }
+      body {
+        font-family: "Segoe UI", Roboto, sans-serif;
+        background: #f5f7fa;
+        padding: 40px;
+        color: #333;
+        margin: 0;
+        min-height: 100vh;
+      }
 
-    h1 {
-      text-align: center;
-      color: #2c3e50;
-      margin-bottom: 30px;
-    }
+      h1 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 30px;
+      }
 
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      padding: 30px;
-    }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        padding: 30px;
+      }
 
-    button {
-      padding: 10px 20px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
+      button {
+        padding: 10px 20px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.2s ease;
+      }
+
+      button:hover {
+        background-color: #2980b9;
+      }
+
+      .data-row {
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 16px;
+      }
+
+      .label {
+        font-weight: bold;
+        flex: 0 0 180px;
+        color: #555;
+      }
+
+      .value {
+        font-family: monospace;
+        color: #2c3e50;
+      }
+
+      .input-row {
+        margin-top: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center; /* Centers items when they wrap */
+      }
+      
+      .input-row input[type="text"] {
+        width: 140px;
+        flex-shrink: 0;
+      }
+      
+      .input-row button {
+        flex-shrink: 0;
+        white-space: nowrap;
+        min-width: 130px; /* Set based on your longest button text */
+      }
+      
+      /* Optional: Add responsive behavior */
+      @media (max-width: 600px) {
+        .input-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        
+        .input-row input[type="text"],
+        .input-row button {
+          width: 100%;
+          min-width: unset;
+        }
+      }
+
+      .input-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 18px;
+        margin-top: 25px;
+      }
+
+      input[type="text"] {
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 15px;
+        width: 140px;
+      }
+
+      #btnConnect {
+        width: 100%;
+      }
+
+      .footer {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 13px;
+        color: #aaa;
+      }
+
+      /* File list area */
+      .file-list-container {
+        margin-top: 20px;
+        border-top: 1px solid #eee;
+        padding-top: 20px;
+      }
+
+      .file-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .file-list {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 10px;
+      }
+
+      .file-item {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .file-item:last-child {
+        border-bottom: none;
+      }
+
+      .file-item input[type="checkbox"] {
+        margin-right: 10px;
+      }
+
+      .file-name {
+        flex-grow: 1;
+        font-family: monospace;
+      }
+
+      .file-size {
+        color: #777;
+        font-size: 0.9em;
+        margin-left: 10px;
+      }
+
+      .no-files {
+        color: #999;
+        font-style: italic;
+        text-align: center;
+        padding: 10px;
+      }
+
+      /* Debug info area */
+      .debug-container {
+        margin-top: 20px;
+        border-top: 1px solid #eee;
+        padding-top: 20px;
+      }
+
+      .debug-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      #debugLog {
+        height: 120px;
+        overflow-y: auto;
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 13px;
+      }
+
+      .debug-entry {
+        margin-bottom: 5px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .debug-time {
+        color: #888;
+        margin-right: 8px;
+      }
+
+      /* Status indicator */
+      .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+
+      .status-connected {
+        background-color: #2ecc71;
+      }
+
+      .status-disconnected {
+        background-color: #e74c3c;
+      }
+
+      /* Connection status */
+      .connection-status {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 8px 12px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      /* Newly added styles */
+      .status-info {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 6px;
+        background-color: #f8f9fa;
+        border-left: 4px solid #3498db;
+      }
+      
+      .status-warning {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 6px;
+        background-color: #fef5e7;
+        border-left: 4px solid #f39c12;
+      }
+      
+      .progress-bar {
+        height: 6px;
+        background-color: #ecf0f1;
+        border-radius: 3px;
+        margin-top: 8px;
+        overflow: hidden;
+      }
+      
+      .progress {
+        height: 100%;
+        background-color: #3498db;
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+      
+      .download-status {
+        font-size: 14px;
+        margin-top: 5px;
+        color: #7f8c8d;
+      }
+
+      .file-item:hover {
+      background-color: #f5f5f5;
+  }
+
+      .file-item input[type="checkbox"] {
+          transform: scale(1.2);
+          margin-right: 12px;
+      }
+
+      #btnDownloadSelected:disabled {
+          background-color: #cccccc;
+          cursor: not-allowed;
+      }
+
+      #btnDownloadSelected:disabled:hover {
+          background-color: #cccccc;
+      }
+  .file-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      background-color: #ffffff;
       transition: background-color 0.2s ease;
-    }
+  }
 
-    button:hover {
-      background-color: #2980b9;
-    }
+  .file-item:hover {
+      background-color: #f8f9fa;
+  }
 
-    .data-row {
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 16px;
-    }
-
-    .label {
-      font-weight: bold;
-      flex: 0 0 180px;
-      color: #555;
-    }
-
-    .value {
-      font-family: monospace;
+  .file-name {
+      flex-grow: 1;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
       color: #2c3e50;
-    }
+  }
 
-    .input-row {
-      margin-top: 25px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .input-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 18px;
-      margin-top: 25px;
-    }
-
-    input[type="text"] {
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
-      width: 140px;
-    }
-
-    #btnConnect {
-      width: 100%;
-    }
-
-    .footer {
-      margin-top: 20px;
-      text-align: center;
+  .file-size {
+      color: #7f8c8d;
       font-size: 13px;
-      color: #aaa;
-    }
+      min-width: 60px;
+      text-align: right;
+  }
 
-    /* File list area */
-    .file-list-container {
+  /* Ensure file list container is visible */
+  .file-list-container {
       margin-top: 20px;
-      border-top: 1px solid #eee;
+      border-top: 2px solid #3498db;
       padding-top: 20px;
-    }
+      background-color: #fafbfc;
+      border-radius: 8px;
+      padding: 15px;
+      display: block !important; /* Force display */
+  }
 
-    .file-list-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .file-list {
+  .file-list {
       max-height: 200px;
       overflow-y: auto;
       border: 1px solid #ddd;
       border-radius: 6px;
       padding: 10px;
-    }
+      background-color: white;
+      min-height: 60px; /* Ensure minimum height */
+  }
 
-    .file-item {
-      display: flex;
+  .file-item {
+      display: flex !important;
       align-items: center;
-      padding: 8px;
+      padding: 12px;
       border-bottom: 1px solid #f0f0f0;
-    }
+      background-color: #ffffff;
+      transition: background-color 0.2s ease;
+  }
 
-    .file-item:last-child {
-      border-bottom: none;
-    }
+  .file-item:hover {
+      background-color: #f8f9fa;
+  }
 
-    .file-item input[type="checkbox"] {
-      margin-right: 10px;
-    }
-
-    .file-name {
+  .file-name {
       flex-grow: 1;
-      font-family: monospace;
-    }
-
-    .file-size {
-      color: #777;
-      font-size: 0.9em;
-      margin-left: 10px;
-    }
-
-    .no-files {
-      color: #999;
-      font-style: italic;
-      text-align: center;
-      padding: 10px;
-    }
-
-    /* Debug info area */
-    .debug-container {
-      margin-top: 20px;
-      border-top: 1px solid #eee;
-      padding-top: 20px;
-    }
-
-    .debug-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    #debugLog {
-      height: 120px;
-      overflow-y: auto;
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 10px;
-      font-family: monospace;
-      font-size: 13px;
-    }
-
-    .debug-entry {
-      margin-bottom: 5px;
-      padding-bottom: 5px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .debug-time {
-      color: #888;
-      margin-right: 8px;
-    }
-
-    /* Status indicator */
-    .status-indicator {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      margin-right: 8px;
-    }
-
-    .status-connected {
-      background-color: #2ecc71;
-    }
-
-    .status-disconnected {
-      background-color: #e74c3c;
-    }
-
-    /* Connection status */
-    .connection-status {
-      display: flex;
-      align-items: center;
-      margin-bottom: 15px;
-      padding: 8px 12px;
-      background-color: #f8f9fa;
-      border-radius: 6px;
+      font-family: 'Courier New', monospace;
       font-size: 14px;
-    }
+      color: #2c3e50;
+  }
 
-    /* Newly added styles */
-    .status-info {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 6px;
-      background-color: #f8f9fa;
-      border-left: 4px solid #3498db;
-    }
-    
-    .status-warning {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 6px;
-      background-color: #fef5e7;
-      border-left: 4px solid #f39c12;
-    }
-    
-    .progress-bar {
-      height: 6px;
-      background-color: #ecf0f1;
-      border-radius: 3px;
-      margin-top: 8px;
-      overflow: hidden;
-    }
-    
-    .progress {
-      height: 100%;
-      background-color: #3498db;
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-    
-    .download-status {
-      font-size: 14px;
-      margin-top: 5px;
+  .file-size {
       color: #7f8c8d;
-    }
+      font-size: 13px;
+      min-width: 60px;
+      text-align: right;
+  }
 
-    .file-item:hover {
-    background-color: #f5f5f5;
-}
+  /* Ensure no hidden elements */
+  #fileList {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      }
 
-    .file-item input[type="checkbox"] {
-        transform: scale(1.2);
-        margin-right: 12px;
-    }
+      /* Install button style */
+      #installButton {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #2ecc71;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 24px;
+        font-size: 14px;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+        cursor: pointer;
+        z-index: 1000;
+        display: none;
+      }
 
-    #btnDownloadSelected:disabled {
-        background-color: #cccccc;
-        cursor: not-allowed;
-    }
+      #installButton:hover {
+        background-color: #27ae60;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(46, 204, 113, 0.4);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Install button -->
+    <button id="installButton">Install App</button>
 
-    #btnDownloadSelected:disabled:hover {
-        background-color: #cccccc;
-    }
-.file-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid #f0f0f0;
-    background-color: #ffffff;
-    transition: background-color 0.2s ease;
-}
-
-.file-item:hover {
-    background-color: #f8f9fa;
-}
-
-.file-name {
-    flex-grow: 1;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    color: #2c3e50;
-}
-
-.file-size {
-    color: #7f8c8d;
-    font-size: 13px;
-    min-width: 60px;
-    text-align: right;
-}
-
-/* Ensure file list container is visible */
-.file-list-container {
-    margin-top: 20px;
-    border-top: 2px solid #3498db;
-    padding-top: 20px;
-    background-color: #fafbfc;
-    border-radius: 8px;
-    padding: 15px;
-    display: block !important; /* Force display */
-}
-
-.file-list {
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 10px;
-    background-color: white;
-    min-height: 60px; /* Ensure minimum height */
-}
-
-.file-item {
-    display: flex !important;
-    align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid #f0f0f0;
-    background-color: #ffffff;
-    transition: background-color 0.2s ease;
-}
-
-.file-item:hover {
-    background-color: #f8f9fa;
-}
-
-.file-name {
-    flex-grow: 1;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    color: #2c3e50;
-}
-
-.file-size {
-    color: #7f8c8d;
-    font-size: 13px;
-    min-width: 60px;
-    text-align: right;
-}
-
-/* Ensure no hidden elements */
-#fileList {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    }
-
-    /* Install button style */
-    #installButton {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background-color: #2ecc71;
-      color: white;
-      border: none;
-      border-radius: 50px;
-      padding: 12px 24px;
-      font-size: 14px;
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-      cursor: pointer;
-      z-index: 1000;
-      display: none;
-    }
-
-    #installButton:hover {
-      background-color: #27ae60;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(46, 204, 113, 0.4);
-    }
-  </style>
-</head>
-<body>
-  <!-- Install button -->
-  <button id="installButton">Install App</button>
-
-  <!-- Multilanguage Support Example -->
-  <div style="text-align:right; margin-bottom:10px;">
-    <select id="langSelect" onchange="switchLang(this.value)">
-      <option value="en">English</option>
-      <option value="zh">中文</option>
-    </select>
-  </div>
-
-  <h1 id="mainTitle">QRF 蓝牙温控面板</h1>
-
-  <div class="container">
-    <div class="connection-status">
-      <span id="statusIndicator" class="status-indicator status-disconnected"></span>
-      <span id="connectionStatusText">Disconnected</span>
+    <!-- Multilanguage Support Example -->
+    <div style="text-align:right; margin-bottom:10px;">
+      <select id="langSelect" onchange="switchLang(this.value)">
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+      </select>
     </div>
 
-    <div class="data-row">
-      <label class="label" id="labelCurrentTemp" for="currentTemp">当前温度：</label>
-      <span class="value" id="currentTemp">--</span>
-    </div>
-    <div class="data-row">
-      <label class="label" id="labelTargetTemp" for="targetTemp">目标温度：</label>
-      <span class="value" id="targetTemp">--</span>
-    </div>
-    <div class="data-row">
-      <label class="label" id="labelBatteryLevel" for="batteryLevel">电池电量：</label>
-      <span class="value" id="batteryLevel">--</span>
-    </div>
+    <h1 id="mainTitle">QRF 蓝牙温控面板</h1>
 
-    <div style="margin: 30px 0;">
-      <canvas id="tempChart" height="180"></canvas>
-    </div>
-
-    <div class="input-row">
-      <input type="text" id="tempInput" maxlength="8" placeholder="设置温度">
-      <button id="btnWriteTemp" onclick="writeTargetTemp()">写入温度</button>
-      <button id="btnDownloadCSV" onclick="askForDownload()">下载日志数据</button>
-    </div>
-     <!-- Status info area -->
-    <div id="fileStatus" class="status-info">
-      File system status: Waiting to request file list...
-    </div>
-
-    <!-- Download progress area -->
-    <div id="downloadProgress" style="display: none;">
-      <div class="progress-bar">
-        <div id="progressBar" class="progress"></div>
+    <div class="container">
+      <div class="connection-status">
+        <span id="statusIndicator" class="status-indicator status-disconnected"></span>
+        <span id="connectionStatusText">Disconnected</span>
       </div>
-      <div id="downloadStatusText" class="download-status">Preparing download...</div>
-    </div>
 
-      <!-- File list area -->
-    <div class="file-list-container">
+      <div class="data-row">
+        <label class="label" id="labelCurrentTemp" for="currentTemp">当前温度：</label>
+        <span class="value" id="currentTemp">--</span>
+      </div>
+      <div class="data-row">
+        <label class="label" id="labelTargetTemp" for="targetTemp">目标温度：</label>
+        <span class="value" id="targetTemp">--</span>
+      </div>
+      <div class="data-row">
+        <label class="label" id="labelBatteryLevel" for="batteryLevel">电池电量：</label>
+        <span class="value" id="batteryLevel">--</span>
+      </div>
+
+      <div style="margin: 30px 0;">
+        <canvas id="tempChart" height="180"></canvas>
+      </div>
+
+      <div class="input-row">
+        <input type="text" id="tempInput" maxlength="8" placeholder="设置温度">
+        <button id="btnWriteTemp" onclick="writeTargetTemp()">写入温度</button>
+        <button id="btnDownloadCSV" onclick="askForDownload()">下载日志数据</button>
+      </div>
+      <!-- Status info area -->
+      <div id="fileStatus" class="status-info">
+        File system status: Waiting to request file list...
+      </div>
+
+      <!-- Download progress area -->
+      <div id="downloadProgress" style="display: none;">
+        <div class="progress-bar">
+          <div id="progressBar" class="progress"></div>
+        </div>
+        <div id="downloadStatusText" class="download-status">Preparing download...</div>
+      </div>
+
+        <!-- File list area -->
+      <div class="file-list-container">
+        <div class="file-list-header">
+          <h3 id="fileListTitle">Available Files</h3>
+          <div>
+            <!--<button id="btnSelectAll" onclick="selectAllFiles()">Select All</button>-->
+          </div>
+        </div>
+        <div class="file-list" id="fileList">
+          <div class="no-files" id="noFilesMessage">No files available</div>
+        </div>
+      </div>
+    
       <div class="file-list-header">
         <h3 id="fileListTitle">Available Files</h3>
         <div>
-          <!--<button id="btnSelectAll" onclick="selectAllFiles()">Select All</button>-->
+          <button id="btnRefreshList" onclick="refreshFileList()" style="margin-right: 10px;">Refresh List</button>
+          <button id="btnDownloadSelected" onclick="downloadSelectedFiles()">Download Selected</button>
         </div>
       </div>
-      <div class="file-list" id="fileList">
-        <div class="no-files" id="noFilesMessage">No files available</div>
+      <!-- Debug info area -->
+      <div class="debug-container">
+        <div class="debug-header">
+          <h3 id="debugTitle">Debug Information</h3>
+          <button id="btnClearDebug" onclick="clearDebugLog()" style="font-size: 14px;">Clear Log</button>
+        </div>
+        <div id="debugLog"></div>
       </div>
-    </div>
-  
-    <div class="file-list-header">
-      <h3 id="fileListTitle">Available Files</h3>
-      <div>
-        <button id="btnRefreshList" onclick="refreshFileList()" style="margin-right: 10px;">Refresh List</button>
-        <button id="btnDownloadSelected" onclick="downloadSelectedFiles()">Download Selected</button>
+
+      <div class="input-actions">
+        <div style="margin-top: 20px; text-align: center;">
+          <button id="btnConnect" onclick="connectBluetooth()">Connect Bluetooth</button>
+        </div>
       </div>
-    </div>
-    <!-- Debug info area -->
-    <div class="debug-container">
-      <div class="debug-header">
-        <h3 id="debugTitle">Debug Information</h3>
-        <button id="btnClearDebug" onclick="clearDebugLog()" style="font-size: 14px;">Clear Log</button>
-      </div>
-      <div id="debugLog"></div>
     </div>
 
-    <div class="input-actions">
-      <div style="margin-top: 20px; text-align: center;">
-        <button id="btnConnect" onclick="connectBluetooth()">Connect Bluetooth</button>
-      </div>
+    <div class="footer" id="footerText">
+      QRF 控制系统 © 2025
     </div>
-  </div>
 
-  <div class="footer" id="footerText">
-    QRF 控制系统 © 2025
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-  <script>
-    // ============================
-    // PWA Functionality
-    // ============================
-    let deferredPrompt;
-    const installButton = document.getElementById('installButton');
-    
-    // Listen for beforeinstallprompt event
-    window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('PWA Install prompt available!');
-      addDebugLog('PWA: Install prompt available');
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script>
+      // ============================
+      // PWA Functionality
+      // ============================
+      let deferredPrompt;
+      const installButton = document.getElementById('installButton');
       
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
-      e.preventDefault();
-      
-      // Stash the event so it can be triggered later
-      deferredPrompt = e;
-      
-      // Show the install button
-      installButton.style.display = 'block';
-      
-      // Update button text based on language
-      updateInstallButtonText();
-    });
-    
-    // Install button click handler
-    installButton.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        // Show the install prompt
-        deferredPrompt.prompt();
+      // Listen for beforeinstallprompt event
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('PWA Install prompt available!');
+        addDebugLog('PWA: Install prompt available');
         
-        // Wait for the user to respond to the prompt
-        const { outcome } = await deferredPrompt.userChoice;
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
         
-        addDebugLog(`PWA: User ${outcome === 'accepted' ? 'accepted' : 'dismissed'} the install prompt`);
+        // Stash the event so it can be triggered later
+        deferredPrompt = e;
         
-        // Hide the install button
+        // Show the install button
+        installButton.style.display = 'block';
+        
+        // Update button text based on language
+        updateInstallButtonText();
+      });
+      
+      // Install button click handler
+      installButton.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          // Show the install prompt
+          deferredPrompt.prompt();
+          
+          // Wait for the user to respond to the prompt
+          const { outcome } = await deferredPrompt.userChoice;
+          
+          addDebugLog(`PWA: User ${outcome === 'accepted' ? 'accepted' : 'dismissed'} the install prompt`);
+          
+          // Hide the install button
+          installButton.style.display = 'none';
+          
+          // Clear the deferredPrompt variable
+          deferredPrompt = null;
+        }
+      });
+      
+      // Listen for app installed event
+      window.addEventListener('appinstalled', (evt) => {
+        console.log('PWA was installed');
+        addDebugLog('PWA: App was successfully installed');
         installButton.style.display = 'none';
-        
-        // Clear the deferredPrompt variable
-        deferredPrompt = null;
-      }
-    });
-    
-    // Listen for app installed event
-    window.addEventListener('appinstalled', (evt) => {
-      console.log('PWA was installed');
-      addDebugLog('PWA: App was successfully installed');
-      installButton.style.display = 'none';
-    });
-    
-    // Check if running as standalone PWA
-    if (window.matchMedia('(display-mode: standalone)').matches || 
-        window.navigator.standalone === true) {
-      console.log('Running as standalone PWA');
-      addDebugLog('PWA: Running in standalone mode');
-    }
-    
-    // ============================
-    // Dynamic Manifest Generation
-    // ============================
-    const iconSize = 192;
-    const hash = document.location.hash || '#main';
-
-    // dynamically created manifest
-    const manifest = {
-      name: 'QRF Thermostat ' + hash.substring(1),
-      short_name: 'QRF Thermostat',
-      description: 'Bluetooth temperature control panel',
-      display: 'standalone',
-      theme_color: '#3498db',
-      background_color: '#f5f7fa',
-      start_url: window.location.href,
-      scope: window.location.origin + '/',
-      orientation: 'portrait'
-    };
-
-    // convert the SVG favicon to PNG for platforms that don't support SVG
-    (async function() {
-      const svgIconLink = document.querySelector('link[rel="icon"]');
-
-      // convert from SVG string to PNG data URL
-      const pngDataUrl = await svgToPng(svgIconLink.href, iconSize);
-
-      // set the icon meta tags to the new PNG
-      setIcon("link[rel='icon']", pngDataUrl, iconSize);
-      setIcon("link[rel='apple-touch-icon']", pngDataUrl, 180);
-
-      // dynamically create manifest
-      manifest.icons =  [{
-        src: pngDataUrl,
-        sizes: `${iconSize}x${iconSize}`,
-        type: 'image/png',
-        purpose: 'any maskable'
-      }]
-
-      // set the manifest meta tag data url
-      setManifest(manifest);
-
-      // generate and set the iOS startup image
-      const startupImageDataUrl = await createStartupImage(
-        svgIconLink.href,
-        manifest.background_color
-      );
-      const startupLink = document.createElement('link');
-      startupLink.rel = 'apple-touch-startup-image';
-      startupLink.href = startupImageDataUrl;
-      document.head.appendChild(startupLink);
-      
-      addDebugLog('PWA: Manifest and icons generated');
-    })();
-
-    function setManifest(manifest) {
-      // Remove existing manifest if any
-      const existingManifest = document.querySelector('link[rel="manifest"]');
-      if (existingManifest) {
-        existingManifest.remove();
-      }
-      
-      const link = document.createElement('link');
-      link.rel = 'manifest';
-      const b64manifest = btoa(JSON.stringify(manifest));
-      link.href = "data:application/json;base64," + b64manifest;
-      document.head.appendChild(link);
-    }
-
-    function setIcon(query, iconurl, size) {
-      const iconLink = document.querySelector(query);
-      if (iconLink) {
-        iconLink.href = iconurl;
-        iconLink.type = 'image/png';
-        if (size) {
-          iconLink.setAttribute('sizes', `${size}x${size}`);
-        }
-      }
-    }
-
-    function svgToPng(svgDataUrl, size) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          canvas.width = size;
-          canvas.height = size;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, size, size);
-          const pngDataUrl = canvas.toDataURL('image/png');
-          resolve(pngDataUrl);
-        };
-        img.onerror = reject;
-        img.src = svgDataUrl;
       });
-    }
-
-    // Safari needs a startup image
-    function createStartupImage(svgDataUrl, bgColor) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          const dpr = window.devicePixelRatio || 1;
-          const canvas = document.createElement('canvas');
-          canvas.width = window.screen.width * dpr;
-          canvas.height = window.screen.height * dpr;
-          const ctx = canvas.getContext('2d');
-
-          ctx.fillStyle = bgColor;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          const iconDisplaySize = canvas.width * 0.25;
-          const x = (canvas.width - iconDisplaySize) / 2;
-          const y = (canvas.height - iconDisplaySize) / 2;
-          ctx.drawImage(img, x, y, iconDisplaySize, iconDisplaySize);
-
-          resolve(canvas.toDataURL('image/png'));
-        };
-        img.onerror = reject;
-        img.src = svgDataUrl;
-      });
-    }
-    
-    // Update install button text based on language
-    function updateInstallButtonText() {
-      if (installButton.style.display === 'block') {
-        installButton.textContent = currentLang === 'zh' ? '安装应用' : 'Install App';
-      }
-    }
-
-    // ============================
-    // Original Application Code
-    // ============================
-    const LANGS = {
-      zh: {
-        title: "蓝牙温控面板",
-        currentTemp: "当前温度：",
-        targetTemp: "目标温度：",
-        batteryLevel: "电池电量：",
-        setTemp: "设置温度",
-        writeTemp: "设置温度",
-        connect: "连接蓝牙设备",
-        footer: "QRF 控制系统 © 2025",
-        alert: "请输入合法的温度（0.0 ~ 99.9°C）",
-        notConnected: "尚未连接蓝牙或未发现写特性",
-        downloadLog: "下载日志数据",
-        availableFiles: "可用文件",
-        noFiles: "暂无可用文件",
-        selectAll: "全选",
-        downloadSelected: "下载选中文件",
-        refreshList: "刷新文件列表",
-        connected: "已连接",
-        disconnected: "未连接",
-        fileStatusWaiting: "文件系统状态: 等待请求文件列表...",
-        fileStatusRequesting: "文件系统状态: 正在请求文件列表...",
-        fileStatusReceived: "文件系统状态: 已收到文件列表",
-        fileStatusError: "文件系统状态: 获取文件列表失败",
-        debugTitle: "调试信息",
-        clearLog: "清空日志"
-      },
-      en: {
-        title: "Bluetooth Thermostat Panel",
-        currentTemp: "Current Temperature:",
-        targetTemp: "Target Temperature:",
-        batteryLevel: "Battery Level:",
-        setTemp: "Set Temperature",
-        writeTemp: "Set Temperature",
-        connect: "Connect Bluetooth",
-        footer: "QRF Control System © 2025",
-        alert: "Please enter a valid temperature (0.0 ~ 99.9°C)",
-        notConnected: "Not connected or characteristic not found",
-        downloadLog: "Download Logged Data",
-        availableFiles: "Available Files",
-        noFiles: "No files available",
-        selectAll: "Select All",
-        downloadSelected: "Download Selected",
-        refreshList: "Refresh List",
-        connected: "Connected",
-        disconnected: "Disconnected",
-        fileStatusWaiting: "File system status: Waiting to request file list...",
-        fileStatusRequesting: "File system status: Requesting file list...",
-        fileStatusReceived: "File system status: File list received",
-        fileStatusError: "File system status: Failed to get file list",
-        debugTitle: "Debug Information",
-        clearLog: "Clear Log"
-      }
-    };
-    let currentLang = 'en';
-
-    function switchLang(lang) {
-      currentLang = lang;
-      document.title = LANGS[lang].title;
-      document.getElementById('mainTitle').textContent = LANGS[lang].title;
-      document.getElementById('labelCurrentTemp').textContent = LANGS[lang].currentTemp;
-      document.getElementById('labelTargetTemp').textContent = LANGS[lang].targetTemp;
-      document.getElementById('labelBatteryLevel').textContent = LANGS[lang].batteryLevel;
-      document.getElementById('tempInput').placeholder = LANGS[lang].setTemp;
-      document.getElementById('btnWriteTemp').textContent = LANGS[lang].writeTemp;
-      document.getElementById('btnConnect').textContent = LANGS[lang].connect;
-      document.getElementById('footerText').textContent = LANGS[lang].footer;
-      document.getElementById('btnDownloadCSV').textContent = LANGS[lang].downloadLog;
-      document.getElementById('fileListTitle').textContent = LANGS[lang].availableFiles;
-      document.getElementById('noFilesMessage').textContent = LANGS[lang].noFiles;
-      document.getElementById('btnSelectAll').textContent = LANGS[lang].selectAll;
-      document.getElementById('btnDownloadSelected').textContent = LANGS[lang].downloadSelected;
-      document.getElementById('connectionStatusText').textContent = isConnected ? LANGS[lang].connected : LANGS[lang].disconnected;
-      document.getElementById('langSelect').value = lang; 
-      document.getElementById('debugTitle').textContent = LANGS[lang].debugTitle;
-      document.getElementById('btnClearDebug').textContent = LANGS[lang].clearLog;
       
-      // Update file status information
-      const fileStatus = document.getElementById('fileStatus');
-      if (fileStatus) {
-        if (fileListRequestAttempts > 0 && fileList.length === 0) {
-          fileStatus.textContent = LANGS[lang].fileStatusError;
-          fileStatus.className = 'status-warning';
-        } else if (fileList.length > 0) {
-          fileStatus.textContent = LANGS[lang].fileStatusReceived;
-          fileStatus.className = 'status-info';
-        } else {
-          fileStatus.textContent = LANGS[lang].fileStatusWaiting;
-          fileStatus.className = 'status-info';
-        }
+      // Check if running as standalone PWA
+      if (window.matchMedia('(display-mode: standalone)').matches || 
+          window.navigator.standalone === true) {
+        console.log('Running as standalone PWA');
+        addDebugLog('PWA: Running in standalone mode');
       }
       
-      // Update install button text
-      updateInstallButtonText();
-    }
+      // ============================
+      // Dynamic Manifest Generation
+      // ============================
+      const iconSize = 192;
+      const hash = document.location.hash || '#main';
 
-    const serviceUUID = 'abcd0000-0000-1000-8000-00805f9b0131';
-    const writeUUID = 'abcd0001-0000-1000-8000-00805f9b0131';
-    const notifyUUIDs = [
-      'abcd0002-0000-1000-8000-00805f9b0131',
-      'abcd0004-0000-1000-8000-00805f9b0131',
-      'abcd2a19-0000-1000-8000-00805f9b0131',
-      'abcd1001-0000-1000-8000-00805f9b0131',
-      'abcd1002-0000-1000-8000-00805f9b0131'  // File list characteristic
-    ];
+      // dynamically created manifest
+      const manifest = {
+        name: 'QRF Thermostat ' + hash.substring(1),
+        short_name: 'QRF Thermostat',
+        description: 'Bluetooth temperature control panel',
+        display: 'standalone',
+        theme_color: '#3498db',
+        background_color: '#f5f7fa',
+        start_url: window.location.href,
+        scope: window.location.origin + '/',
+        orientation: 'portrait'
+      };
 
-    const notifyDisplayMap = {
-      'abcd0002-0000-1000-8000-00805f9b0131': 'currentTemp',
-      'abcd0004-0000-1000-8000-00805f9b0131': 'targetTemp',
-      'abcd2a19-0000-1000-8000-00805f9b0131': 'batteryLevel',
-      'abcd1002-0000-1000-8000-00805f9b0131': 'fileList'
-    };
+      // convert the SVG favicon to PNG for platforms that don't support SVG
+      (async function() {
+        const svgIconLink = document.querySelector('link[rel="icon"]');
 
-    let writeCharacteristic = null;
-    let fileChunks = [];
-    let isFileTransferInProgress = false;
-    let currentDownloadFileId = null;
-    let fileTransferStartTime = null;
-    let currentFileId = null;
-    let fileList = []; // Store file list information
-    let filesData = {};
-    let isConnected = false;
-    let fileListRequestAttempts = 0;
-    let maxFileListRequestAttempts = 1;
-    let downloadQueue = [];
-    let isDownloading = false;
-    let fileListReceived = false; // New: Mark if file list has been received
-    let fileListRequestInProgress = false; // New: Mark if file list request is in progress
-    
-    // CSV file writing variables
-    let currentCSVContent = '';
-    let csvWriter = null;
-    let pendingDownload = null;
-    
+        // convert from SVG string to PNG data URL
+        const pngDataUrl = await svgToPng(svgIconLink.href, iconSize);
 
-    function handleFileListNotification(event) {
-        const value = new TextDecoder().decode(event.target.value);
-        console.log(`Received file list: ${value}`);
+        // set the icon meta tags to the new PNG
+        setIcon("link[rel='icon']", pngDataUrl, iconSize);
+        setIcon("link[rel='apple-touch-icon']", pngDataUrl, 180);
+
+        // dynamically create manifest
+        manifest.icons =  [{
+          src: pngDataUrl,
+          sizes: `${iconSize}x${iconSize}`,
+          type: 'image/png',
+          purpose: 'any maskable'
+        }]
+
+        // set the manifest meta tag data url
+        setManifest(manifest);
+
+        // generate and set the iOS startup image
+        const startupImageDataUrl = await createStartupImage(
+          svgIconLink.href,
+          manifest.background_color
+        );
+        const startupLink = document.createElement('link');
+        startupLink.rel = 'apple-touch-startup-image';
+        startupLink.href = startupImageDataUrl;
+        document.head.appendChild(startupLink);
         
-        // Handle error cases
-        if (value === "SD_INIT_FAILED") {
-            console.log("SD card initialization failed");
-            showErrorMessage("SD card initialization failed, please check SD card");
-            return;
-        }
-        
-        if (value === "NO_ROOT_DIR") {
-            console.log("Root directory not found");
-            showErrorMessage("Root directory not found, SD card may not be formatted correctly");
-            return;
-        }
-        
-        if (value === "NO_FILES") {
-            console.log("No files found on device");
-            showInfoMessage("No files found on device");
-            return;
+        addDebugLog('PWA: Manifest and icons generated');
+      })();
+
+      function setManifest(manifest) {
+        // Remove existing manifest if any
+        const existingManifest = document.querySelector('link[rel="manifest"]');
+        if (existingManifest) {
+          existingManifest.remove();
         }
         
-        // Normal file list processing
-        const files = value.split(';');
-        if (files.length > 0) {
-            updateFileListUI(files);
-        }
-    }
-
-    function showErrorMessage(message) {
-        // Show error message
-        const errorElement = document.getElementById('errorMessage');
-        if (errorElement) {
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-            
-            // Hide error message after 5 seconds
-            setTimeout(() => {
-                errorElement.style.display = 'none';
-            }, 5000);
-        }
-    }
-
-    function showInfoMessage(message) {
-        // Show info message
-        const infoElement = document.getElementById('infoMessage');
-        if (infoElement) {
-            infoElement.textContent = message;
-            infoElement.style.display = 'block';
-            
-            // Hide info message after 3 seconds
-            setTimeout(() => {
-                infoElement.style.display = 'none';
-            }, 3000);
-        }
-    }
-
-    // Add debug log function
-    function addDebugLog(message) {
-      const debugLog = document.getElementById('debugLog');
-      const now = new Date();
-      const timeString = now.toTimeString().split(' ')[0];
-      const logEntry = document.createElement('div');
-      logEntry.className = 'debug-entry';
-      logEntry.innerHTML = `<span class="debug-time">[${timeString}]</span> ${message}`;
-      debugLog.appendChild(logEntry);
-      debugLog.scrollTop = debugLog.scrollHeight;
-    }
-
-    function clearDebugLog() {
-      document.getElementById('debugLog').innerHTML = '';
-    }
-
-    function updateConnectionStatus(connected) {
-      isConnected = connected;
-      const indicator = document.getElementById('statusIndicator');
-      const statusText = document.getElementById('connectionStatusText');
-      
-      if (connected) {
-        indicator.className = 'status-indicator status-connected';
-        statusText.textContent = LANGS[currentLang].connected;
-        addDebugLog(`[CONNECTION] ✅ Status updated: Connected`);
-      } else {
-        indicator.className = 'status-indicator status-disconnected';
-        statusText.textContent = LANGS[currentLang].disconnected;
-        addDebugLog(`[CONNECTION] ❌ Status updated: Disconnected`);
-        
-        // Also clear any ongoing transfers
-        if (isFileTransferInProgress || currentDownloadFileId) {
-          addDebugLog(`[CONNECTION] 🔄 Clearing transfer state due to disconnection`);
-          isFileTransferInProgress = false;
-          currentDownloadFileId = null;
-          currentCSVContent = '';
-          fileChunks = [];
-        }
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        const b64manifest = btoa(JSON.stringify(manifest));
+        link.href = "data:application/json;base64," + b64manifest;
+        document.head.appendChild(link);
       }
-    }
 
-   function updateFileStatus(message, isError = false) {
-    const fileStatus = document.getElementById('fileStatus');
-    if (fileStatus) {
-        fileStatus.textContent = message;
-        fileStatus.className = isError ? 'status-warning' : 'status-info';
-        
-        // Add file count information
-        if (!isError && fileList.length > 0) {
-            //const totalSizeKB = fileList.reduce((sum, file) => sum + Math.round(file.size / 1024), 0);
-            const totalSizeKB = fileList.reduce((sum, file) => sum + (file.size / 1024), 0).toFixed(2);
-            fileStatus.textContent += ` (${fileList.length} files, total ${totalSizeKB} KB)`;
-        }
-    }
-}
-function refreshFileList() {
-  if (!writeCharacteristic) {
-    alert(LANGS[currentLang].notConnected);
-    return;
-  }
-  
-  addDebugLog("Manually refreshing file list...");
-  requestFileList();
-}
-
-    function parseFixedPointTemp(value) {
-      const raw = value.getUint8(0) | (value.getUint8(1) << 8);
-      return raw * 0.1;
-    }
-
-    async function connectBluetooth() {
-      try {
-    addDebugLog('Requesting Bluetooth device...');
-        const device = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: [serviceUUID]
-        });
-
-    addDebugLog(`Found device: ${device.name}`);
-    addDebugLog('Connecting to GATT server...');
-
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService(serviceUUID);
-        const characteristics = await service.getCharacteristics();
-
-    addDebugLog(`Found ${characteristics.length} characteristics`);
-
-        for (const char of characteristics) {
-          const uuid = char.uuid;
-      addDebugLog(`Characteristic: ${uuid}`);
-
-          if (uuid === writeUUID) {
-            writeCharacteristic = char;
-        addDebugLog('Found write characteristic');
-            continue;
+      function setIcon(query, iconurl, size) {
+        const iconLink = document.querySelector(query);
+        if (iconLink) {
+          iconLink.href = iconurl;
+          iconLink.type = 'image/png';
+          if (size) {
+            iconLink.setAttribute('sizes', `${size}x${size}`);
           }
+        }
+      }
 
-          if (notifyUUIDs.includes(uuid)) {
-        addDebugLog(`Enabling notifications: ${uuid}`);
-            await char.startNotifications();
-            char.addEventListener('characteristicvaluechanged', (event) => {
-              const value = event.target.value;
-              const uuid = event.target.uuid;
-              const spanId = notifyDisplayMap[uuid];
-              let parsed = '';
+      function svgToPng(svgDataUrl, size) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, size, size);
+            const pngDataUrl = canvas.toDataURL('image/png');
+            resolve(pngDataUrl);
+          };
+          img.onerror = reject;
+          img.src = svgDataUrl;
+        });
+      }
+
+      // Safari needs a startup image
+      function createStartupImage(svgDataUrl, bgColor) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const dpr = window.devicePixelRatio || 1;
+            const canvas = document.createElement('canvas');
+            canvas.width = window.screen.width * dpr;
+            canvas.height = window.screen.height * dpr;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const iconDisplaySize = canvas.width * 0.25;
+            const x = (canvas.width - iconDisplaySize) / 2;
+            const y = (canvas.height - iconDisplaySize) / 2;
+            ctx.drawImage(img, x, y, iconDisplaySize, iconDisplaySize);
+
+            resolve(canvas.toDataURL('image/png'));
+          };
+          img.onerror = reject;
+          img.src = svgDataUrl;
+        });
+      }
+      
+      // Update install button text based on language
+      function updateInstallButtonText() {
+        if (installButton.style.display === 'block') {
+          installButton.textContent = currentLang === 'zh' ? '安装应用' : 'Install App';
+        }
+      }
+
+      // ============================
+      // Original Application Code
+      // ============================
+      const LANGS = {
+        zh: {
+          title: "蓝牙温控面板",
+          currentTemp: "当前温度：",
+          targetTemp: "目标温度：",
+          batteryLevel: "电池电量：",
+          setTemp: "设置温度",
+          writeTemp: "设置温度",
+          connect: "连接蓝牙设备",
+          footer: "QRF 控制系统 © 2025",
+          alert: "请输入合法的温度（0.0 ~ 99.9°C）",
+          notConnected: "尚未连接蓝牙或未发现写特性",
+          downloadLog: "下载日志数据",
+          availableFiles: "可用文件",
+          noFiles: "暂无可用文件",
+          selectAll: "全选",
+          downloadSelected: "下载选中文件",
+          refreshList: "刷新文件列表",
+          connected: "已连接",
+          disconnected: "未连接",
+          fileStatusWaiting: "文件系统状态: 等待请求文件列表...",
+          fileStatusRequesting: "文件系统状态: 正在请求文件列表...",
+          fileStatusReceived: "文件系统状态: 已收到文件列表",
+          fileStatusError: "文件系统状态: 获取文件列表失败",
+          debugTitle: "调试信息",
+          clearLog: "清空日志"
+        },
+        en: {
+          title: "Bluetooth Thermostat Panel",
+          currentTemp: "Current Temperature:",
+          targetTemp: "Target Temperature:",
+          batteryLevel: "Battery Level:",
+          setTemp: "Set Temperature",
+          writeTemp: "Set Temperature",
+          connect: "Connect Bluetooth",
+          footer: "QRF Control System © 2025",
+          alert: "Please enter a valid temperature (0.0 ~ 99.9°C)",
+          notConnected: "Not connected or characteristic not found",
+          downloadLog: "Download Logged Data",
+          availableFiles: "Available Files",
+          noFiles: "No files available",
+          selectAll: "Select All",
+          downloadSelected: "Download Selected",
+          refreshList: "Refresh List",
+          connected: "Connected",
+          disconnected: "Disconnected",
+          fileStatusWaiting: "File system status: Waiting to request file list...",
+          fileStatusRequesting: "File system status: Requesting file list...",
+          fileStatusReceived: "File system status: File list received",
+          fileStatusError: "File system status: Failed to get file list",
+          debugTitle: "Debug Information",
+          clearLog: "Clear Log"
+        }
+      };
+      let currentLang = 'en';
+
+      function switchLang(lang) {
+        currentLang = lang;
+        document.title = LANGS[lang].title;
+        document.getElementById('mainTitle').textContent = LANGS[lang].title;
+        document.getElementById('labelCurrentTemp').textContent = LANGS[lang].currentTemp;
+        document.getElementById('labelTargetTemp').textContent = LANGS[lang].targetTemp;
+        document.getElementById('labelBatteryLevel').textContent = LANGS[lang].batteryLevel;
+        document.getElementById('tempInput').placeholder = LANGS[lang].setTemp;
+        document.getElementById('btnWriteTemp').textContent = LANGS[lang].writeTemp;
+        document.getElementById('btnConnect').textContent = LANGS[lang].connect;
+        document.getElementById('footerText').textContent = LANGS[lang].footer;
+        document.getElementById('btnDownloadCSV').textContent = LANGS[lang].downloadLog;
+        document.getElementById('fileListTitle').textContent = LANGS[lang].availableFiles;
+        document.getElementById('noFilesMessage').textContent = LANGS[lang].noFiles;
+        document.getElementById('btnSelectAll').textContent = LANGS[lang].selectAll;
+        document.getElementById('btnDownloadSelected').textContent = LANGS[lang].downloadSelected;
+        document.getElementById('connectionStatusText').textContent = isConnected ? LANGS[lang].connected : LANGS[lang].disconnected;
+        document.getElementById('langSelect').value = lang; 
+        document.getElementById('debugTitle').textContent = LANGS[lang].debugTitle;
+        document.getElementById('btnClearDebug').textContent = LANGS[lang].clearLog;
+        
+        // Update file status information
+        const fileStatus = document.getElementById('fileStatus');
+        if (fileStatus) {
+          if (fileListRequestAttempts > 0 && fileList.length === 0) {
+            fileStatus.textContent = LANGS[lang].fileStatusError;
+            fileStatus.className = 'status-warning';
+          } else if (fileList.length > 0) {
+            fileStatus.textContent = LANGS[lang].fileStatusReceived;
+            fileStatus.className = 'status-info';
+          } else {
+            fileStatus.textContent = LANGS[lang].fileStatusWaiting;
+            fileStatus.className = 'status-info';
+          }
+        }
+        
+        // Update install button text
+        updateInstallButtonText();
+      }
+
+      const serviceUUID = 'abcd0000-0000-1000-8000-00805f9b0131';
+      const writeUUID = 'abcd0001-0000-1000-8000-00805f9b0131';
+      const notifyUUIDs = [
+        'abcd0002-0000-1000-8000-00805f9b0131',
+        'abcd0004-0000-1000-8000-00805f9b0131',
+        'abcd2a19-0000-1000-8000-00805f9b0131',
+        'abcd1001-0000-1000-8000-00805f9b0131',
+        'abcd1002-0000-1000-8000-00805f9b0131'  // File list characteristic
+      ];
+
+      const notifyDisplayMap = {
+        'abcd0002-0000-1000-8000-00805f9b0131': 'currentTemp',
+        'abcd0004-0000-1000-8000-00805f9b0131': 'targetTemp',
+        'abcd2a19-0000-1000-8000-00805f9b0131': 'batteryLevel',
+        'abcd1002-0000-1000-8000-00805f9b0131': 'fileList'
+      };
+
+      let writeCharacteristic = null;
+      let fileChunks = [];
+      let isFileTransferInProgress = false;
+      let currentDownloadFileId = null;
+      let fileTransferStartTime = null;
+      let currentFileId = null;
+      let fileList = []; // Store file list information
+      let filesData = {};
+      let isConnected = false;
+      let fileListRequestAttempts = 0;
+      let maxFileListRequestAttempts = 1;
+      let downloadQueue = [];
+      let isDownloading = false;
+      let fileListReceived = false; // New: Mark if file list has been received
+      let fileListRequestInProgress = false; // New: Mark if file list request is in progress
+      
+      // CSV file writing variables
+      let currentCSVContent = '';
+      let csvWriter = null;
+      let pendingDownload = null;
+      
+
+      function handleFileListNotification(event) {
+          const value = new TextDecoder().decode(event.target.value);
+          console.log(`Received file list: ${value}`);
+          
+          // Handle error cases
+          if (value === "SD_INIT_FAILED") {
+              console.log("SD card initialization failed");
+              showErrorMessage("SD card initialization failed, please check SD card");
+              return;
+          }
+          
+          if (value === "NO_ROOT_DIR") {
+              console.log("Root directory not found");
+              showErrorMessage("Root directory not found, SD card may not be formatted correctly");
+              return;
+          }
+          
+          if (value === "NO_FILES") {
+              console.log("No files found on device");
+              showInfoMessage("No files found on device");
+              return;
+          }
+          
+          // Normal file list processing
+          const files = value.split(';');
+          if (files.length > 0) {
+              updateFileListUI(files);
+          }
+      }
+
+      function showErrorMessage(message) {
+          // Show error message
+          const errorElement = document.getElementById('errorMessage');
+          if (errorElement) {
+              errorElement.textContent = message;
+              errorElement.style.display = 'block';
               
-              // DEBUG: Log ALL notifications from file characteristic
-              if (uuid === 'abcd1001-0000-1000-8000-00805f9b0131') {
-                const now = new Date();
-                const timestamp = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
-                const rawData = new Uint8Array(value.buffer);
-                const textData = new TextDecoder().decode(value.buffer);
-                addDebugLog(`[BLE-DEBUG] ${timestamp}: ${rawData.length}B | HEX: ${Array.from(rawData).map(b => b.toString(16).padStart(2, '0')).join(' ')} | TEXT: "${textData}"`);
-                
-                // IMMEDIATE CHECK: Look for any non-EOF data
-                if (textData !== "EOF") {
-                  addDebugLog(`[BLE-ALERT] 🔍 NON-EOF DATA DETECTED: "${textData.substring(0, 50)}..."`);
-                }
-                
-                // COUNT total notifications received
-                if (!window.bleNotificationCount) window.bleNotificationCount = 0;
-                window.bleNotificationCount++;
-                addDebugLog(`[BLE-COUNT] Total file notifications received: ${window.bleNotificationCount}`);
-              }
-
-              switch (uuid) {
-                case 'abcd0002-0000-1000-8000-00805f9b0131':
-                  const tempVal = parseFixedPointTemp(value);
-                  parsed = tempVal.toFixed(1) + ' °C';
-                  addTempPoint(tempVal);
-                  break;
-                case 'abcd0004-0000-1000-8000-00805f9b0131':
-                  parsed = parseFixedPointTemp(value).toFixed(1) + ' °C';
-                  break;
-                case 'abcd2a19-0000-1000-8000-00805f9b0131':
-                  parsed = value.getUint8(0) + ' %';
-                  break;
-
-                case 'abcd1001-0000-1000-8000-00805f9b0131':
-                try {
-                    const value = event.target.value;
-                    const rawData = new Uint8Array(value.buffer);
-                    const textData = new TextDecoder().decode(value.buffer);
-                    
-                    // Enhanced debugging - log every single notification with precise timestamp
-                    const now = new Date();
-                    const timestamp = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
-                    addDebugLog(`[FILE] Raw notification at ${timestamp}: ${rawData.length} bytes, hex: ${Array.from(rawData).map(b => b.toString(16).padStart(2, '0')).join(' ')}, text: "${textData.substring(0, 100)}"`);
-                    
-                    // ACKNOWLEDGMENT-BASED PROTOCOL IMPLEMENTATION
-                    
-                    // Check if this is the start of a file transfer (FILE_ID: prefix)
-                    if (textData.startsWith("FILE_ID:")) {
-                        currentDownloadFileId = textData.substring(8).trim();
-                        fileChunks = [];
-                        isFileTransferInProgress = true;
-                        fileTransferStartTime = Date.now();
-                        window.currentChunkNumber = 0; // Reset chunk counter
-                        
-                        // Initialize CSV content for real-time writing
-                        currentCSVContent = '';
-                        csvWriter = null;
-                        
-                        // Clear any existing timeout
-                        if (window.currentDownloadTimeout) {
-                            clearTimeout(window.currentDownloadTimeout);
-                        }
-                        
-                        addDebugLog(`[FILE] ✅ FILE_ID received for: ${currentDownloadFileId} at ${timestamp}`);
-                        addDebugLog(`[CSV] 📝 Initialized CSV writer for real-time file construction`);
-                        updateDownloadProgress(currentDownloadFileId, 10, "Starting file transfer...");
-                        
-                        // SEND ACKNOWLEDGMENT FOR FILE_ID
-                        if (writeCharacteristic) {
-                            const ackMessage = 'ACK_FILE_ID';
-                            writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
-                            addDebugLog(`[ACK]   Sent acknowledgment: ${ackMessage}`);
-                        } else {
-                            addDebugLog(`[ACK] ❌ Cannot send ACK - no write characteristic`);
-                        }
-                        return;
-                    }
-                    
-                    // Check for EOF
-                    if (textData === "EOF") {
-                        addDebugLog(`[FILE] EOF received for file: ${currentDownloadFileId} at ${timestamp}`);
-                        
-                        // Normal EOF processing
-                        if (isFileTransferInProgress && currentDownloadFileId) {
-                            addDebugLog(`[FILE] Transfer completed for ${currentDownloadFileId}. Total chunks: ${fileChunks.length}`);
-                            addDebugLog(`[CSV] 📄 Final CSV content length: ${currentCSVContent.length} characters`);
-                            updateDownloadProgress(currentDownloadFileId, 95, "File transfer completed, creating CSV download...");
-                            
-                            // Clear any pending timeout
-                            if (window.currentDownloadTimeout) {
-                                clearTimeout(window.currentDownloadTimeout);
-                                window.currentDownloadTimeout = null;
-                            }
-                            
-                            // Process the downloaded CSV file
-                            setTimeout(() => {
-                                downloadCSVFile(currentDownloadFileId);
-                                isFileTransferInProgress = false;
-                                currentDownloadFileId = null;
-                                
-                                // Continue with next file in queue
-                                processDownloadQueue();
-                            }, 100);
-                        } else {
-                            addDebugLog(`[FILE] ⚠️ EOF received but no active transfer. Active: ${isFileTransferInProgress}, FileId: ${currentDownloadFileId}, Chunks: ${fileChunks.length}`);
-                            
-                            // Reset and continue queue
-                            setTimeout(() => {
-                                isFileTransferInProgress = false;
-                                currentDownloadFileId = null;
-                                processDownloadQueue();
-                            }, 1000);
-                        }
-                        return;
-                    }
-                    
-                    // Regular data chunk - only process if we're in a file transfer
-                    if (isFileTransferInProgress && currentDownloadFileId) {
-                        // Store the actual ArrayBuffer data for fallback
-                        const chunkData = new Uint8Array(value.buffer);
-                        fileChunks.push(chunkData);
-                        window.currentChunkNumber++;
-                        
-                        // REAL-TIME CSV WRITING: Convert chunk to text and append to CSV content
-                        const chunkText = new TextDecoder().decode(value.buffer);
-                        currentCSVContent += chunkText;
-                        
-                        const totalBytes = fileChunks.reduce((sum, chunk) => sum + chunk.length, 0);
-                        addDebugLog(`[FILE] ✅ Chunk ${fileChunks.length} received for ${currentDownloadFileId}. Chunk size: ${chunkData.length}, Total: ${totalBytes} bytes`);
-                        addDebugLog(`[CSV] 📝 Added ${chunkText.length} characters to CSV content. Total CSV length: ${currentCSVContent.length} chars`);
-                        
-                        // SEND ACKNOWLEDGMENT FOR CHUNK
-                        if (writeCharacteristic) {
-                            const ackMessage = `ACK_CHUNK_${window.currentChunkNumber}`;
-                            writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
-                            addDebugLog(`[ACK] 📤 Sent acknowledgment: ${ackMessage}`);
-                            
-                            // KEEPALIVE: Log progress every 50 chunks to monitor large transfers
-                            if (window.currentChunkNumber % 50 === 0) {
-                                addDebugLog(`[PROGRESS] 📊 Large transfer progress: chunk ${window.currentChunkNumber}, total data: ${currentCSVContent.length} chars`);
-                            }
-                        } else {
-                            addDebugLog(`[ACK] ❌ Cannot send chunk ACK - no write characteristic`);
-                        }
-                        
-                        // Update progress with buffer status
-                        const fileInfo = fileList.find(file => file.id === currentDownloadFileId);
-                        if (fileInfo && fileInfo.size > 0) {
-                            const progress = Math.min(90, 10 + (totalBytes / fileInfo.size * 80));
-                            updateDownloadProgress(currentDownloadFileId, progress, `Chunk ${fileChunks.length}/${Math.ceil(fileInfo.size/50)} received`);
-                        }
-                        
-                    } else {
-                        addDebugLog(`[FILE] ❌ Received data chunk but no active transfer. Transfer active: ${isFileTransferInProgress}, FileId: ${currentDownloadFileId}`);
-                    }
-                    
-                } catch (error) {
-                    addDebugLog(`[FILE] Error processing notification: ${error}`);
-                }
-                break;
-                case 'abcd1002-0000-1000-8000-00805f9b0131':
-                  // File list reception - process directly, don't set spanId
-                  handleFileList(value);
-                  return; // Important: return after processing
-                  }
-
-              if (spanId) {
-                document.getElementById(spanId).textContent = parsed;
-              }
-              console.log(`Received notification [${uuid}]:`, parsed);
-          addDebugLog(`Received notification [${uuid}]: ${parsed}`);
-            });
+              // Hide error message after 5 seconds
+              setTimeout(() => {
+                  errorElement.style.display = 'none';
+              }, 5000);
           }
-        }
+      }
 
-    addDebugLog("Connection successful ✅");
-    updateConnectionStatus(true);
-    updateFileStatus(LANGS[currentLang].fileStatusWaiting);
+      function showInfoMessage(message) {
+          // Show info message
+          const infoElement = document.getElementById('infoMessage');
+          if (infoElement) {
+              infoElement.textContent = message;
+              infoElement.style.display = 'block';
+              
+              // Hide info message after 3 seconds
+              setTimeout(() => {
+                  infoElement.style.display = 'none';
+              }, 3000);
+          }
+      }
 
-    // --- Periodic time sync integration ---
-    async function syncTimeToDevice() {
-      if (writeCharacteristic) {
+      // Add debug log function
+      function addDebugLog(message) {
+        const debugLog = document.getElementById('debugLog');
         const now = new Date();
-        const year = now.getFullYear() - 2000;
-        const month = now.getMonth() + 1;
-        const day = now.getDate();
-        const hours = now.getHours();
-        const minutes = now.getMinutes();
-        const seconds = now.getSeconds();
-        const timeBuffer = new Uint8Array([year, month, day, hours, minutes, seconds]);
-        await writeCharacteristic.writeValue(timeBuffer);
-        addDebugLog("Synchronized time to device (interval)");
+        const timeString = now.toTimeString().split(' ')[0];
+        const logEntry = document.createElement('div');
+        logEntry.className = 'debug-entry';
+        logEntry.innerHTML = `<span class="debug-time">[${timeString}]</span> ${message}`;
+        debugLog.appendChild(logEntry);
+        debugLog.scrollTop = debugLog.scrollHeight;
       }
-    }
-    // Initial sync
-    await syncTimeToDevice();
-    // Start interval sync every 3 hour
-    window.timeSyncInterval = setInterval(syncTimeToDevice, 3 * 60 * 60 * 1000);
-    // Clear interval on disconnect
-    device.addEventListener('gattserverdisconnected', () => {
-      if (window.timeSyncInterval) clearInterval(window.timeSyncInterval);
-    });
 
-    // Request file list after successful connection
-    requestFileList();
-    
-    // Monitor BLE connection stability during file transfers
-    device.addEventListener('gattserverdisconnected', () => {
-      addDebugLog(`[BLE-CONNECTION] ❌ GATT server disconnected during operation`);
-      updateConnectionStatus(false);
-      if (window.timeSyncInterval) clearInterval(window.timeSyncInterval);
-      
-      // Clear any pending download timeouts
-      if (window.currentDownloadTimeout) {
-        clearTimeout(window.currentDownloadTimeout);
-        window.currentDownloadTimeout = null;
+      function clearDebugLog() {
+        document.getElementById('debugLog').innerHTML = '';
       }
-      
-      // Reset transfer state and notify user if download was in progress
-      if (isFileTransferInProgress || currentDownloadFileId) {
-        addDebugLog(`🚨 [TRANSFER] File transfer interrupted by disconnection!`);
-        updateDownloadProgress(currentDownloadFileId || 'unknown', 0, 
-          "❌ Transfer failed - Device disconnected");
-      }
-      
-      isFileTransferInProgress = false;
-      currentDownloadFileId = null;
-      currentCSVContent = '';
-      fileChunks = [];
-    });
-    
-    // Monitor connection status
-    setInterval(() => {
-      if (device && device.gatt) {
-        const connected = device.gatt.connected;
-        if (!connected && isConnected) {
-          addDebugLog(`[BLE-CONNECTION] ⚠️ Connection lost detected in monitor`);
-          updateConnectionStatus(false);
-          updateFileStatus(LANGS[currentLang].fileStatusError, true);
-        }
-      }
-    }, 5000); // Check every 5 seconds
-      } catch (error) {
-    addDebugLog(`Connection failed ❌: ${error}`);
-        console.error("Connection failed ❌", error);
-    updateConnectionStatus(false);
-    updateFileStatus(LANGS[currentLang].fileStatusError, true);
-  }
-}
 
-// Completely rewrite handleFileList function
-function handleFileList(value) {
-    try {
-        const text = new TextDecoder().decode(value.buffer);
-        console.log("Raw file list data:", text);
+      function updateConnectionStatus(connected) {
+        isConnected = connected;
+        const indicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('connectionStatusText');
         
-        // Enhanced debug information
-        addDebugLog(`Received raw file list data: [${text}] length: ${text.length}`);
-        
-        // Strict empty data check - including length 0, only spaces, only null characters, etc.
-        if (!text || 
-            text.trim() === '' || 
-            text === '\u0000' || 
-            text.charCodeAt(0) === 0 ||
-            text === 'null' || 
-            text === 'undefined' || 
-            text === 'NULL' || 
-            text === 'UNDEFINED' ||
-            text === 'EOF' || 
-            text.startsWith("FILE_ID:") ||
-            text.length === 0) {
-            
-            addDebugLog("Received invalid file list data, completely ignored");
-            
-            // Important: if there is already file list data, absolutely do not clear it
-            if (fileList.length > 0) {
-                addDebugLog("Already have file list data, keeping existing data unchanged");
-                return;
-            }
-            
-            // If no data and not in error state, also ignore
-            if (fileListRequestAttempts < maxFileListRequestAttempts) {
-                return;
-            }
-            
-            return;
-        }
-        
-        // Check for error cases
-        if (text === "SD_INIT_FAILED") {
-            addDebugLog("SD card initialization failed");
-            updateFileStatus("SD card initialization failed, please check SD card", true);
-            fileListRequestInProgress = false;
-            return;
-        }
-        
-        if (text === "NO_ROOT_DIR") {
-            addDebugLog("Root directory not found");
-            updateFileStatus("Root directory not found, SD card may not be formatted correctly", true);
-            fileListRequestInProgress = false;
-            return;
-        }
-        
-        if (text === "NO_FILES") {
-            addDebugLog("No files found on device");
-            updateFileStatus("No files found on device", false);
-            // Only clear if there are indeed no files
-            fileList = [];
-            updateFileListUI();
-            fileListRequestInProgress = false;
-            return;
-        }
-
-        // Mark that valid file list has been received
-        fileListReceived = true;
-        fileListRequestInProgress = false;
-        fileListRequestAttempts = 0;
-        
-        updateFileStatus(LANGS[currentLang].fileStatusReceived);
-        
-        // Process file list
-        let files = [];
-        if (text.includes(';')) {
-            files = text.split(';').filter(item => item.trim() !== '');
-        } else if (text.trim() !== '') {
-            files = [text];
-        }
-        
-        if (files.length === 0) {
-            addDebugLog("Parsed file list is empty, ignored");
-            return;
-        }
-        
-        addDebugLog(`Parsed ${files.length} file items`);
-        
-
-
-
-
-        const newFileList = files.map((file, index) => {
-            const parts = file.split(',');
-            if (parts.length === 0) return null;
-            
-            const fileObj = {
-                name: parts[0] || `file_${index}`,
-                size: parts.length > 1 ? parseInt(parts[1]) || 0 : 0,
-                id: parts.length > 2 ? parts[2] : parts[0] || `file_${index}`
-            };
-            
-            if (!fileObj.name || fileObj.name.trim() === '') {
-                fileObj.name = `file_${index}`;
-            }
-            
-            addDebugLog(`File ${index}: name=${fileObj.name}, size=${fileObj.size}, ID=${fileObj.id}`);
-            return fileObj;
-        }).filter(file => file !== null);
-        
-        // Only update if new file list is not empty
-        if (newFileList.length > 0) {
-            fileList = newFileList;
-            console.log("Final file list:", fileList);
-            updateFileListUI();
-            
-            // Add confirmation log
-            addDebugLog(`File list update completed, currently have ${fileList.length} files`);
-        }
-    } catch (error) {
-        addDebugLog(`Error parsing file list: ${error}`);
-        console.error("Error parsing file list:", error);
-        updateFileStatus(LANGS[currentLang].fileStatusError, true);
-        fileListRequestInProgress = false;
-        // Absolutely do not clear existing file list
-    }
-}
-// Modify requestFileList function, add request status control
-function requestFileList() {
-  if (!writeCharacteristic) {
-    alert(LANGS[currentLang].notConnected);
-    addDebugLog("Error: Not connected, cannot request file list");
-    updateFileStatus(LANGS[currentLang].fileStatusError, true);
-    return;
-  }
-  
-  // 重置状态以强制获取最新文件列表
-  fileListRequestInProgress = false;
-  fileListReceived = false;
-  fileListRequestAttempts = 0;
-  fileList = []; // 清空当前文件列表
-  
-  fileListRequestInProgress = true;
-  fileListRequestAttempts++;
-  
-  updateFileStatus(LANGS[currentLang].fileStatusRequesting + ` (Attempt ${fileListRequestAttempts}/${maxFileListRequestAttempts})`);
-  
-  const encoder = new TextEncoder();
-  const command = "REQUEST_FILE_LIST";
-  const data = encoder.encode(command);
-  
-  writeCharacteristic.writeValue(data)
-    .then(() => {
-      addDebugLog(`Sent file list request: ${command}`);
-      
-      setTimeout(() => {
-        if (!fileListReceived && fileListRequestAttempts < maxFileListRequestAttempts) {
-          addDebugLog(`No file list response received, trying again (${fileListRequestAttempts}/${maxFileListRequestAttempts})`);
-          fileListRequestInProgress = false;
-          requestFileList();
-        } else if (!fileListReceived) {
-          addDebugLog("Reached maximum file list request attempts");
-          updateFileStatus(LANGS[currentLang].fileStatusError, true);
-          fileListRequestInProgress = false;
-        }
-      }, 3000);
-    })
-    .catch(err => {
-      addDebugLog(`File list request failed: ${command} - ${err}`);
-      console.error("File list request failed:", err);
-      updateFileStatus(LANGS[currentLang].fileStatusError, true);
-      fileListRequestInProgress = false;
-    });
-}
-// Add missing functions - add near file list related functions
-function updateDownloadButtonState() {
-    const selectedCheckboxes = document.querySelectorAll('#fileList input[type="checkbox"]:checked');
-    const downloadButton = document.getElementById('btnDownloadSelected');
-    
-    if (downloadButton) {
-        downloadButton.disabled = selectedCheckboxes.length === 0;
-    }
-}
-
-function updateFileListUI() {
-    const fileListElement = document.getElementById('fileList');
-    
-    if (!fileListElement) {
-        console.error("fileList element not found");
-        addDebugLog("Error: fileList element not found");
-        return;
-    }
-    
-    // Force display of file list container
-    fileListElement.style.display = 'block';
-    fileListElement.style.visibility = 'visible';
-    fileListElement.style.opacity = '1';
-    
-    // Clear current list
-    fileListElement.innerHTML = '';
-    
-    addDebugLog(`Updating UI: file list length = ${fileList.length}`);
-    console.log("Current fileList:", fileList);
-    
-    if (fileList.length === 0) {
-        const noFilesMessage = document.createElement('div');
-        noFilesMessage.className = 'no-files';
-        noFilesMessage.id = 'noFilesMessage';
-        noFilesMessage.textContent = LANGS[currentLang].noFiles;
-        noFilesMessage.style.padding = '20px';
-        noFilesMessage.style.textAlign = 'center';
-        noFilesMessage.style.color = '#666';
-        fileListElement.appendChild(noFilesMessage);
-        addDebugLog("UI update: showing no files message");
-    } else {
-        fileList.forEach((file, index) => {
-            if (!file || !file.name) {
-                console.error("Invalid file object:", file);
-                return;
-            }
-            
-           // const sizeKB = Math.round(file.size / 1024);
-            const sizeKB = (file.size / 1024).toFixed(2);
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-            fileItem.style.display = 'flex';
-            fileItem.style.alignItems = 'center';
-            fileItem.style.padding = '12px';
-            fileItem.style.borderBottom = '1px solid #f0f0f0';
-            fileItem.style.backgroundColor = '#ffffff';
-            
-            fileItem.innerHTML = `
-                <input type="checkbox" id="file-${index}" value="${file.id || file.name}" data-filename="${file.name}" style="margin-right: 12px;">
-                <label class="file-name" for="file-${index}" style="flex-grow: 1; font-family: 'Courier New', monospace; font-size: 14px; color: #2c3e50;">${file.name}</label>
-                <span class="file-size" style="color: #7f8c8d; font-size: 13px; min-width: 60px; text-align: right;">${sizeKB} KB</span>
-            `;
-            
-            fileListElement.appendChild(fileItem);
-            addDebugLog(`UI update: added file item - ${file.name} (${sizeKB} KB)`);
-        });
-        
-        addDebugLog(`UI update completed: showing ${fileList.length} files`);
-    }
-    
-    // Add checkbox change listeners
-    const checkboxes = document.querySelectorAll('#fileList input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateDownloadButtonState);
-    });
-    
-    // Update button state
-    updateDownloadButtonState();
-    
-    // Force redraw
-    setTimeout(() => {
-        fileListElement.style.display = 'none';
-        setTimeout(() => {
-            fileListElement.style.display = 'block';
-        }, 10);
-    }, 10);
-}
-
-window.addEventListener('DOMContentLoaded', function() {
-    // Initialize temperature chart
-    initTempChart();
-    
-    // Initialize file list UI
-    updateFileListUI();
-    
-    // Initialize download button state
-    updateDownloadButtonState();
-
-    addDebugLog("Page loaded successfully");
-    
-    // Log PWA status
-    if (window.navigator.standalone) {
-      addDebugLog("PWA: Running as standalone app on iOS");
-    }
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      addDebugLog("PWA: Running as standalone app on Android/Desktop");
-    }
-});
-
-async function processDownloadQueue() {
-    if (downloadQueue.length === 0) {
-        isDownloading = false;
-        addDebugLog("Download queue is empty");
-        setTimeout(() => {
-            document.getElementById('downloadProgress').style.display = 'none';
-        }, 2000);
-        return;
-    }
-    
-    isDownloading = true;
-    const file = downloadQueue.shift();
-    
-    addDebugLog(`Starting download: ${file.name} (ID: ${file.id})`);
-    updateDownloadProgress(file.name, 5, "Initializing download...");
-    
-    try {
-        // Reset transfer state
-        fileChunks = [];
-        isFileTransferInProgress = false;
-        currentDownloadFileId = null;
-        
-        // Store the requested file for fallback purposes
-        window.lastRequestedFile = file.name;
-        
-        // Send download request
-        const encoder = new TextEncoder();
-        const command = `DOWNLOAD:${file.id}`;
-        const data = encoder.encode(command);
-        
-        await writeCharacteristic.writeValue(data);
-        addDebugLog(`Download request sent: ${command}`);
-        updateDownloadProgress(file.name, 20, "Download request sent, waiting for data...");
-        
-        // Set timeout for entire file transfer
-        const downloadTimeout = setTimeout(() => {
-            addDebugLog(`Download timeout: ${file.name}`);
-            updateDownloadProgress(file.name, 0, "Download timeout, skipping this file");
+        if (connected) {
+          indicator.className = 'status-indicator status-connected';
+          statusText.textContent = LANGS[currentLang].connected;
+          addDebugLog(`[CONNECTION] ✅ Status updated: Connected`);
+        } else {
+          indicator.className = 'status-indicator status-disconnected';
+          statusText.textContent = LANGS[currentLang].disconnected;
+          addDebugLog(`[CONNECTION] ❌ Status updated: Disconnected`);
+          
+          // Also clear any ongoing transfers
+          if (isFileTransferInProgress || currentDownloadFileId) {
+            addDebugLog(`[CONNECTION] 🔄 Clearing transfer state due to disconnection`);
             isFileTransferInProgress = false;
             currentDownloadFileId = null;
-            // Continue with next file
-            setTimeout(() => processDownloadQueue(), 1000);
-        }, 60000); // 60 second timeout for entire file
-        
-        window.currentDownloadTimeout = downloadTimeout;
-        
-    } catch (err) {
-        addDebugLog(`Download request failed: ${file.name} - ${err}`);
-        updateDownloadProgress(file.name, 0, "Download failed");
-        // Continue with next file
-        setTimeout(() => processDownloadQueue(), 1000);
-    }
-}
-
-// Modify handleFileChunk function, add stricter filtering
-function handleFileChunk(value) {
-    const textChunk = new TextDecoder().decode(value.buffer);
-    
-    // Clear download timeout
-    if (window.currentDownloadTimeout) {
-        clearTimeout(window.currentDownloadTimeout);
-        window.currentDownloadTimeout = null;
-    }
-    
-    // Strict check: only process file transfer related data
-    if (textChunk.startsWith("FILE_ID:")) {
-        currentFileId = textChunk.substring(8).trim();
-        filesData[currentFileId] = [];
-        addDebugLog(`Starting file reception: ${currentFileId}`);
-        updateDownloadProgress(currentFileId, 20, "Starting to receive file data...");
-        return;
-    } 
-    else if (textChunk === "EOF") {
-        if (currentFileId && filesData[currentFileId]) {
-            const totalChunks = filesData[currentFileId].length;
-            addDebugLog(`File reception completed: ${currentFileId}, total ${totalChunks} data chunks`);
-            updateDownloadProgress(currentFileId, 95, "File reception completed, preparing download...");
-            
-            setTimeout(() => {
-                downloadFile(currentFileId);
-                delete filesData[currentFileId];
-                currentFileId = null;
-                
-                // Immediately process next file
-                processDownloadQueue();
-            }, 100);
-        }
-        return;
-    }
-    else if (currentFileId) {
-        // File data chunk - store raw ArrayBuffer directly
-        if (!filesData[currentFileId]) {
-            filesData[currentFileId] = [];
-        }
-        
-        // Store raw ArrayBuffer
-        filesData[currentFileId].push(value.buffer.slice(0));
-        const chunkCount = filesData[currentFileId].length;
-        
-        // Update progress
-        const fileInfo = fileList.find(file => file.id === currentFileId);
-        if (fileInfo) {
-            const estimatedTotalChunks = Math.ceil(fileInfo.size / 512);
-            const progress = Math.min(90, 20 + (chunkCount / estimatedTotalChunks * 70));
-            updateDownloadProgress(currentFileId, progress, `Received ${chunkCount} data chunks`);
-        }
-        
-        return;
-    }
-    
-    // If we reach here, it's unrelated data, but log more detailed information for debugging
-    addDebugLog(`Received unrelated data, length: ${value.buffer.byteLength}, content: ${textChunk.substring(0, 50)}...`);
-}
-    // Update download progress
-    function updateDownloadProgress(fileId, percent, status) {
-      const progressBar = document.getElementById('progressBar');
-      const statusText = document.getElementById('downloadStatusText');
-      
-      if (progressBar && statusText) {
-        progressBar.style.width = percent + '%';
-        
-        // Enhanced progress display for large files
-        let progressText = `File ${fileId}: ${status}`;
-        if (percent > 0 && percent < 100) {
-            progressText += ` (${percent.toFixed(1)}%)`;
-        }
-        
-        // Add data transfer indicators for active downloads
-        if (percent > 10 && percent < 100) {
-            const dots = '.'.repeat((Math.floor(Date.now() / 500) % 4) + 1);
-            progressText += ` ${dots}`;
-        }
-        
-        statusText.textContent = progressText;
-        
-        // Show progress area
-        document.getElementById('downloadProgress').style.display = 'block';
-      }
-    }
-
-    // Select all files
-    function selectAllFiles() {
-      const checkboxes = document.querySelectorAll('#fileList input[type="checkbox"]');
-      const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-      
-      checkboxes.forEach(checkbox => {
-        checkbox.checked = !allChecked;
-      });
-      
-      addDebugLog(`${allChecked ? 'Deselected all' : 'Selected all'} files`);
-    }
-
-    // Replace downloadSelectedFiles function
-function downloadSelectedFiles() {
-    const selectedCheckboxes = document.querySelectorAll('#fileList input[type="checkbox"]:checked');
-    
-    if (selectedCheckboxes.length === 0) {
-        alert("Please select at least one file");
-        addDebugLog("Download error: No files selected");
-        return;
-    }
-    
-    if (!writeCharacteristic) {
-        alert(LANGS[currentLang].notConnected);
-        addDebugLog("Download error: Not connected");
-        return;
-    }
-    
-    const selectedFiles = Array.from(selectedCheckboxes).map(checkbox => {
-        return {
-            id: checkbox.value,
-            name: checkbox.getAttribute('data-filename')
-        };
-    });
-    
-    addDebugLog(`Starting download of ${selectedFiles.length} files: ${selectedFiles.map(f => f.name).join(', ')}`);
-    
-    // Clear download queue and add new files
-    downloadQueue = [];
-    selectedFiles.forEach(file => {
-        downloadQueue.push(file);
-    });
-    
-    // Start download
-    if (!isDownloading) {
-        processDownloadQueue();
-    }
-}
-
-    // Simulate file data for testing
-    function simulateFiles() {
-      addDebugLog("Generating simulated file data...");
-      fileList = [
-        { name: 'temperature_log_20250101.csv', size: 24576, id: 'log1' },
-        { name: 'temperature_log_20250102.csv', size: 31242, id: 'log2' },
-        { name: 'settings_backup.json', size: 1024, id: 'settings' }
-      ];
-      updateFileListUI();
-      updateFileStatus("Simulated file data loaded");
-      addDebugLog("Generated 3 simulated files");
-    }
-
-    async function writeTargetTemp() {
-      const inputStr = document.getElementById('tempInput').value.trim();
-      const inputNum = parseFloat(inputStr);
-
-      if (isNaN(inputNum) || inputNum < 0 || inputNum > 99.9) {
-        alert(LANGS[currentLang].alert);
-        addDebugLog(`Temperature setting error: ${inputStr}`);
-        return;
-      }
-
-      const intValue = Math.round(inputNum * 10);
-      const encodedStr = intValue.toString().padStart(3, '0');
-      const encoder = new TextEncoder();
-      const data = encoder.encode(encodedStr);
-
-      if (writeCharacteristic) {
-        try {
-          await writeCharacteristic.writeValue(data);
-          addDebugLog(`Temperature setting successful: ${inputNum}°C`);
-          console.log("Write successful:", encodedStr);
-        } catch (err) {
-          console.error("Write failed:", err);
-        }
-      } else {
-        alert(LANGS[currentLang].notConnected);
-        addDebugLog("Temperature setting error: Not connected");
-      }
-    }
-
-    function askForDownload() {
-      fileChunks = []; // Clear previous data
-      const encoder = new TextEncoder();
-      const data = encoder.encode("DOWNLOAD_CSV");
-      if (writeCharacteristic) {
-        writeCharacteristic.writeValue(data)
-          .then(() => {
-            console.log("Download command sent");
-          })
-          .catch(err => {
-            console.error("Download command failed:", err);
-          });
-      } else {
-        alert(LANGS[currentLang].notConnected);
-      }
-    }
-
-    // Chart.js temperature/time chart setup
-    let tempChart = null;
-    let tempData = {
-      labels: [],
-      datasets: [{
-        label: 'Temperature (°C)',
-        data: [], 
-        borderColor: '#3498db',
-        backgroundColor: 'rgba(52,152,219,0.08)',
-        tension: 0.2,
-        pointRadius: 2,
-        fill: true
-      }]
-    };
-
-    function initTempChart() {
-      const ctx = document.getElementById('tempChart').getContext('2d');
-      tempChart = new Chart(ctx, {
-        type: 'line',
-        data: tempData,
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            x: {
-              type: 'time',
-              time: { unit: 'minute', tooltipFormat: 'HH:mm:ss' },
-              title: { display: true, text: 'Time' }
-            },
-            y: {
-              title: { display: true, text: 'Temperature (°C)' },
-              suggestedMin: 0,
-              suggestedMax: 50
-            }
+            currentCSVContent = '';
+            fileChunks = [];
           }
         }
-      });
-    }
-
-    switchLang(currentLang);
-    window.addEventListener('DOMContentLoaded', initTempChart);
-
-    // Update chart when new temperature arrives
-    function addTempPoint(temp) {
-      if (!tempChart) return; 
-      const now = new Date();
-      tempData.labels.push(now);
-      tempData.datasets[0].data.push(temp);
-      // Keep only latest 60 points
-      if (tempData.labels.length > 60) {
-        tempData.labels.shift();
-        tempData.datasets[0].data.shift();
       }
-      tempChart.update();
-    }
 
-
-function downloadFile() {
-  if (fileChunks.length === 0) {
-    alert('No data received!');
-    addDebugLog('[FILE] ERROR: No chunks to assemble');
-    return;
-  }
-  
-  addDebugLog(`[FILE] Assembling file from ${fileChunks.length} chunks`);
-  
-  // Calculate total size
-  let totalLength = fileChunks.reduce((sum, arr) => sum + arr.length, 0);
-  addDebugLog(`[FILE] Total data size: ${totalLength} bytes`);
-  
-  // Combine all chunks
-  let allData = new Uint8Array(totalLength);
-  let offset = 0;
-  
-  for (let i = 0; i < fileChunks.length; i++) {
-    const chunk = fileChunks[i];
-    allData.set(chunk, offset);
-    offset += chunk.length;
-    addDebugLog(`[FILE] Chunk ${i+1}/${fileChunks.length}: ${chunk.length} bytes`);
-  }
-  
-  // Convert to text and create download
-  let fileText = new TextDecoder().decode(allData);
-  addDebugLog(`[FILE] File text length: ${fileText.length} characters`);
-  addDebugLog(`[FILE] First 100 chars: ${fileText.substring(0, 100)}`);
-  
-  // Create and trigger download
-  let blob = new Blob([fileText], {type: 'text/csv'});
-  let url = URL.createObjectURL(blob);
-  let a = document.createElement('a');
-  a.href = url;
-  a.download = 'temperature_data.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  
-  addDebugLog('[FILE] Download completed successfully');
-  fileChunks = []; // Clear for next download
-}
-
-function downloadCSVFile(fileId) {
-  if (!currentCSVContent || currentCSVContent.length === 0) {
-    addDebugLog(`[CSV] ❌ ERROR: No CSV content to download for ${fileId}`);
-    
-    // Fallback: Try to reconstruct from chunks if available
-    if (fileChunks.length > 0) {
-      addDebugLog(`[CSV] 🔄 Attempting fallback reconstruction from ${fileChunks.length} chunks`);
-      let totalLength = fileChunks.reduce((sum, arr) => sum + arr.length, 0);
-      let allData = new Uint8Array(totalLength);
-      let offset = 0;
-      
-      for (let i = 0; i < fileChunks.length; i++) {
-        const chunk = fileChunks[i];
-        allData.set(chunk, offset);
-        offset += chunk.length;
+    function updateFileStatus(message, isError = false) {
+      const fileStatus = document.getElementById('fileStatus');
+      if (fileStatus) {
+          fileStatus.textContent = message;
+          fileStatus.className = isError ? 'status-warning' : 'status-info';
+          
+          // Add file count information
+          if (!isError && fileList.length > 0) {
+              //const totalSizeKB = fileList.reduce((sum, file) => sum + Math.round(file.size / 1024), 0);
+              const totalSizeKB = fileList.reduce((sum, file) => sum + (file.size / 1024), 0).toFixed(2);
+              fileStatus.textContent += ` (${fileList.length} files, total ${totalSizeKB} KB)`;
+          }
       }
-      
-      currentCSVContent = new TextDecoder().decode(allData);
-      addDebugLog(`[CSV] 🔄 Fallback reconstruction successful: ${currentCSVContent.length} characters`);
-    } else {
-      alert('No CSV data received for file: ' + fileId);
+  }
+  function refreshFileList() {
+    if (!writeCharacteristic) {
+      alert(LANGS[currentLang].notConnected);
       return;
     }
+    
+    addDebugLog("Manually refreshing file list...");
+    requestFileList();
   }
-  
-  addDebugLog(`[CSV] 📊 Creating CSV download for ${fileId}: ${currentCSVContent.length} characters`);
-  
-  // Validate CSV content
-  const lines = currentCSVContent.split('\n').filter(line => line.trim() !== '');
-  addDebugLog(`[CSV] 📊 CSV validation: ${lines.length} lines detected`);
-  
-  if (lines.length > 0) {
-    addDebugLog(`[CSV] 📊 First line: "${lines[0].substring(0, 100)}..."`);
-    if (lines.length > 1) {
-      addDebugLog(`[CSV] 📊 Second line: "${lines[1].substring(0, 100)}..."`);
+
+      function parseFixedPointTemp(value) {
+        const raw = value.getUint8(0) | (value.getUint8(1) << 8);
+        return raw * 0.1;
+      }
+
+      async function connectBluetooth() {
+        try {
+      addDebugLog('Requesting Bluetooth device...');
+          const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: [serviceUUID]
+          });
+
+      addDebugLog(`Found device: ${device.name}`);
+      addDebugLog('Connecting to GATT server...');
+
+          const server = await device.gatt.connect();
+          const service = await server.getPrimaryService(serviceUUID);
+          const characteristics = await service.getCharacteristics();
+
+      addDebugLog(`Found ${characteristics.length} characteristics`);
+
+          for (const char of characteristics) {
+            const uuid = char.uuid;
+        addDebugLog(`Characteristic: ${uuid}`);
+
+            if (uuid === writeUUID) {
+              writeCharacteristic = char;
+          addDebugLog('Found write characteristic');
+              continue;
+            }
+
+            if (notifyUUIDs.includes(uuid)) {
+          addDebugLog(`Enabling notifications: ${uuid}`);
+              await char.startNotifications();
+              char.addEventListener('characteristicvaluechanged', (event) => {
+                const value = event.target.value;
+                const uuid = event.target.uuid;
+                const spanId = notifyDisplayMap[uuid];
+                let parsed = '';
+                
+                // DEBUG: Log ALL notifications from file characteristic
+                if (uuid === 'abcd1001-0000-1000-8000-00805f9b0131') {
+                  const now = new Date();
+                  const timestamp = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
+                  const rawData = new Uint8Array(value.buffer);
+                  const textData = new TextDecoder().decode(value.buffer);
+                  addDebugLog(`[BLE-DEBUG] ${timestamp}: ${rawData.length}B | HEX: ${Array.from(rawData).map(b => b.toString(16).padStart(2, '0')).join(' ')} | TEXT: "${textData}"`);
+                  
+                  // IMMEDIATE CHECK: Look for any non-EOF data
+                  if (textData !== "EOF") {
+                    addDebugLog(`[BLE-ALERT] 🔍 NON-EOF DATA DETECTED: "${textData.substring(0, 50)}..."`);
+                  }
+                  
+                  // COUNT total notifications received
+                  if (!window.bleNotificationCount) window.bleNotificationCount = 0;
+                  window.bleNotificationCount++;
+                  addDebugLog(`[BLE-COUNT] Total file notifications received: ${window.bleNotificationCount}`);
+                }
+
+                switch (uuid) {
+                  case 'abcd0002-0000-1000-8000-00805f9b0131':
+                    const tempVal = parseFixedPointTemp(value);
+                    parsed = tempVal.toFixed(1) + ' °C';
+                    addTempPoint(tempVal);
+                    break;
+                  case 'abcd0004-0000-1000-8000-00805f9b0131':
+                    parsed = parseFixedPointTemp(value).toFixed(1) + ' °C';
+                    break;
+                  case 'abcd2a19-0000-1000-8000-00805f9b0131':
+                    parsed = value.getUint8(0) + ' %';
+                    break;
+
+                  case 'abcd1001-0000-1000-8000-00805f9b0131':
+                  try {
+                      const value = event.target.value;
+                      const rawData = new Uint8Array(value.buffer);
+                      const textData = new TextDecoder().decode(value.buffer);
+                      
+                      // Enhanced debugging - log every single notification with precise timestamp
+                      const now = new Date();
+                      const timestamp = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
+                      addDebugLog(`[FILE] Raw notification at ${timestamp}: ${rawData.length} bytes, hex: ${Array.from(rawData).map(b => b.toString(16).padStart(2, '0')).join(' ')}, text: "${textData.substring(0, 100)}"`);
+                      
+                      // ACKNOWLEDGMENT-BASED PROTOCOL IMPLEMENTATION
+                      
+                      // Check if this is the start of a file transfer (FILE_ID: prefix)
+                      if (textData.startsWith("FILE_ID:")) {
+                          currentDownloadFileId = textData.substring(8).trim();
+                          fileChunks = [];
+                          isFileTransferInProgress = true;
+                          fileTransferStartTime = Date.now();
+                          window.currentChunkNumber = 0; // Reset chunk counter
+                          
+                          // Initialize CSV content for real-time writing
+                          currentCSVContent = '';
+                          csvWriter = null;
+                          
+                          // Clear any existing timeout
+                          if (window.currentDownloadTimeout) {
+                              clearTimeout(window.currentDownloadTimeout);
+                          }
+                          
+                          addDebugLog(`[FILE] ✅ FILE_ID received for: ${currentDownloadFileId} at ${timestamp}`);
+                          addDebugLog(`[CSV] 📝 Initialized CSV writer for real-time file construction`);
+                          updateDownloadProgress(currentDownloadFileId, 10, "Starting file transfer...");
+                          
+                          // SEND ACKNOWLEDGMENT FOR FILE_ID
+                          if (writeCharacteristic) {
+                              const ackMessage = 'ACK_FILE_ID';
+                              writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
+                              addDebugLog(`[ACK]   Sent acknowledgment: ${ackMessage}`);
+                          } else {
+                              addDebugLog(`[ACK] ❌ Cannot send ACK - no write characteristic`);
+                          }
+                          return;
+                      }
+                      
+                      // Check for EOF
+                      if (textData === "EOF") {
+                          addDebugLog(`[FILE] EOF received for file: ${currentDownloadFileId} at ${timestamp}`);
+                          
+                          // Normal EOF processing
+                          if (isFileTransferInProgress && currentDownloadFileId) {
+                              addDebugLog(`[FILE] Transfer completed for ${currentDownloadFileId}. Total chunks: ${fileChunks.length}`);
+                              addDebugLog(`[CSV] 📄 Final CSV content length: ${currentCSVContent.length} characters`);
+                              updateDownloadProgress(currentDownloadFileId, 95, "File transfer completed, creating CSV download...");
+                              
+                              // Clear any pending timeout
+                              if (window.currentDownloadTimeout) {
+                                  clearTimeout(window.currentDownloadTimeout);
+                                  window.currentDownloadTimeout = null;
+                              }
+                              
+                              // Process the downloaded CSV file
+                              setTimeout(() => {
+                                  downloadCSVFile(currentDownloadFileId);
+                                  isFileTransferInProgress = false;
+                                  currentDownloadFileId = null;
+                                  
+                                  // Continue with next file in queue
+                                  processDownloadQueue();
+                              }, 100);
+                          } else {
+                              addDebugLog(`[FILE] ⚠️ EOF received but no active transfer. Active: ${isFileTransferInProgress}, FileId: ${currentDownloadFileId}, Chunks: ${fileChunks.length}`);
+                              
+                              // Reset and continue queue
+                              setTimeout(() => {
+                                  isFileTransferInProgress = false;
+                                  currentDownloadFileId = null;
+                                  processDownloadQueue();
+                              }, 1000);
+                          }
+                          return;
+                      }
+                      
+                      // Regular data chunk - only process if we're in a file transfer
+                      if (isFileTransferInProgress && currentDownloadFileId) {
+                          // Store the actual ArrayBuffer data for fallback
+                          const chunkData = new Uint8Array(value.buffer);
+                          fileChunks.push(chunkData);
+                          window.currentChunkNumber++;
+                          
+                          // REAL-TIME CSV WRITING: Convert chunk to text and append to CSV content
+                          const chunkText = new TextDecoder().decode(value.buffer);
+                          currentCSVContent += chunkText;
+                          
+                          const totalBytes = fileChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+                          addDebugLog(`[FILE] ✅ Chunk ${fileChunks.length} received for ${currentDownloadFileId}. Chunk size: ${chunkData.length}, Total: ${totalBytes} bytes`);
+                          addDebugLog(`[CSV] 📝 Added ${chunkText.length} characters to CSV content. Total CSV length: ${currentCSVContent.length} chars`);
+                          
+                          // SEND ACKNOWLEDGMENT FOR CHUNK
+                          if (writeCharacteristic) {
+                              const ackMessage = `ACK_CHUNK_${window.currentChunkNumber}`;
+                              writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
+                              addDebugLog(`[ACK] 📤 Sent acknowledgment: ${ackMessage}`);
+                              
+                              // KEEPALIVE: Log progress every 50 chunks to monitor large transfers
+                              if (window.currentChunkNumber % 50 === 0) {
+                                  addDebugLog(`[PROGRESS] 📊 Large transfer progress: chunk ${window.currentChunkNumber}, total data: ${currentCSVContent.length} chars`);
+                              }
+                          } else {
+                              addDebugLog(`[ACK] ❌ Cannot send chunk ACK - no write characteristic`);
+                          }
+                          
+                          // Update progress with buffer status
+                          const fileInfo = fileList.find(file => file.id === currentDownloadFileId);
+                          if (fileInfo && fileInfo.size > 0) {
+                              const progress = Math.min(90, 10 + (totalBytes / fileInfo.size * 80));
+                              updateDownloadProgress(currentDownloadFileId, progress, `Chunk ${fileChunks.length}/${Math.ceil(fileInfo.size/50)} received`);
+                          }
+                          
+                      } else {
+                          addDebugLog(`[FILE] ❌ Received data chunk but no active transfer. Transfer active: ${isFileTransferInProgress}, FileId: ${currentDownloadFileId}`);
+                      }
+                      
+                  } catch (error) {
+                      addDebugLog(`[FILE] Error processing notification: ${error}`);
+                  }
+                  break;
+                  case 'abcd1002-0000-1000-8000-00805f9b0131':
+                    // File list reception - process directly, don't set spanId
+                    handleFileList(value);
+                    return; // Important: return after processing
+                    }
+
+                if (spanId) {
+                  document.getElementById(spanId).textContent = parsed;
+                }
+                console.log(`Received notification [${uuid}]:`, parsed);
+            addDebugLog(`Received notification [${uuid}]: ${parsed}`);
+              });
+            }
+          }
+
+      addDebugLog("Connection successful ✅");
+      updateConnectionStatus(true);
+      updateFileStatus(LANGS[currentLang].fileStatusWaiting);
+
+      // --- Periodic time sync integration ---
+      async function syncTimeToDevice() {
+        if (writeCharacteristic) {
+          const now = new Date();
+          const year = now.getFullYear() - 2000;
+          const month = now.getMonth() + 1;
+          const day = now.getDate();
+          const hours = now.getHours();
+          const minutes = now.getMinutes();
+          const seconds = now.getSeconds();
+          const timeBuffer = new Uint8Array([year, month, day, hours, minutes, seconds]);
+          await writeCharacteristic.writeValue(timeBuffer);
+          addDebugLog("Synchronized time to device (interval)");
+        }
+      }
+      // Initial sync
+      await syncTimeToDevice();
+      // Start interval sync every 3 hour
+      window.timeSyncInterval = setInterval(syncTimeToDevice, 3 * 60 * 60 * 1000);
+      // Clear interval on disconnect
+      device.addEventListener('gattserverdisconnected', () => {
+        if (window.timeSyncInterval) clearInterval(window.timeSyncInterval);
+      });
+
+      // Request file list after successful connection
+      requestFileList();
+      
+      // Monitor BLE connection stability during file transfers
+      device.addEventListener('gattserverdisconnected', () => {
+        addDebugLog(`[BLE-CONNECTION] ❌ GATT server disconnected during operation`);
+        updateConnectionStatus(false);
+        if (window.timeSyncInterval) clearInterval(window.timeSyncInterval);
+        
+        // Clear any pending download timeouts
+        if (window.currentDownloadTimeout) {
+          clearTimeout(window.currentDownloadTimeout);
+          window.currentDownloadTimeout = null;
+        }
+        
+        // Reset transfer state and notify user if download was in progress
+        if (isFileTransferInProgress || currentDownloadFileId) {
+          addDebugLog(`🚨 [TRANSFER] File transfer interrupted by disconnection!`);
+          updateDownloadProgress(currentDownloadFileId || 'unknown', 0, 
+            "❌ Transfer failed - Device disconnected");
+        }
+        
+        isFileTransferInProgress = false;
+        currentDownloadFileId = null;
+        currentCSVContent = '';
+        fileChunks = [];
+      });
+      
+      // Monitor connection status
+      setInterval(() => {
+        if (device && device.gatt) {
+          const connected = device.gatt.connected;
+          if (!connected && isConnected) {
+            addDebugLog(`[BLE-CONNECTION] ⚠️ Connection lost detected in monitor`);
+            updateConnectionStatus(false);
+            updateFileStatus(LANGS[currentLang].fileStatusError, true);
+          }
+        }
+      }, 5000); // Check every 5 seconds
+        } catch (error) {
+      addDebugLog(`Connection failed ❌: ${error}`);
+          console.error("Connection failed ❌", error);
+      updateConnectionStatus(false);
+      updateFileStatus(LANGS[currentLang].fileStatusError, true);
     }
   }
-  
-  // Create and trigger CSV download
-  const blob = new Blob([currentCSVContent], {type: 'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileId.endsWith('.csv') ? fileId : (fileId + '.csv');
-  
-  // Add download attributes for better compatibility
-  a.setAttribute('download', a.download);
-  a.style.display = 'none';
-  
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  
-  addDebugLog(`[CSV] ✅ CSV download triggered: ${a.download} (${blob.size} bytes)`);
-  
-  // Clear CSV content for next file
-  currentCSVContent = '';
-  fileChunks = [];
-  
-  // Update progress to 100%
-  updateDownloadProgress(fileId, 100, `CSV download completed: ${lines.length} rows`);
-}
 
-function downloadCompletedFile(fileId) {
-  if (fileChunks.length === 0) {
-    addDebugLog(`[FILE] ERROR: No chunks to assemble for ${fileId}`);
-    alert('No data received for file: ' + fileId);
-    return;
-  }
-  
-  addDebugLog(`[FILE] Assembling ${fileId} from ${fileChunks.length} chunks`);
-  
-  // Calculate total size
-  let totalLength = fileChunks.reduce((sum, arr) => sum + arr.length, 0);
-  addDebugLog(`[FILE] Total data size: ${totalLength} bytes`);
-  
-  // Combine all chunks
-  let allData = new Uint8Array(totalLength);
-  let offset = 0;
-  
-  for (let i = 0; i < fileChunks.length; i++) {
-    const chunk = fileChunks[i];
-    allData.set(chunk, offset);
-    offset += chunk.length;
-    addDebugLog(`[FILE] Chunk ${i+1}/${fileChunks.length}: ${chunk.length} bytes`);
-  }
-  
-  // Convert to text
-  let fileText = new TextDecoder().decode(allData);
-  addDebugLog(`[FILE] File text length: ${fileText.length} characters`);
-  
-  // Create and trigger download
-  let blob = new Blob([fileText], {type: 'text/csv'});
-  let url = URL.createObjectURL(blob);
-  let a = document.createElement('a');
-  a.href = url;
-  a.download = fileId || 'downloaded_file.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  
-  addDebugLog(`[FILE] Download completed: ${fileId}`);
-  fileChunks = []; // Clear for next file
-  
-  // Update progress to 100%
-  updateDownloadProgress(fileId, 100, "Download completed");
-}
+  // Completely rewrite handleFileList function
+  function handleFileList(value) {
+      try {
+          const text = new TextDecoder().decode(value.buffer);
+          console.log("Raw file list data:", text);
+          
+          // Enhanced debug information
+          addDebugLog(`Received raw file list data: [${text}] length: ${text.length}`);
+          
+          // Strict empty data check - including length 0, only spaces, only null characters, etc.
+          if (!text || 
+              text.trim() === '' || 
+              text === '\u0000' || 
+              text.charCodeAt(0) === 0 ||
+              text === 'null' || 
+              text === 'undefined' || 
+              text === 'NULL' || 
+              text === 'UNDEFINED' ||
+              text === 'EOF' || 
+              text.startsWith("FILE_ID:") ||
+              text.length === 0) {
+              
+              addDebugLog("Received invalid file list data, completely ignored");
+              
+              // Important: if there is already file list data, absolutely do not clear it
+              if (fileList.length > 0) {
+                  addDebugLog("Already have file list data, keeping existing data unchanged");
+                  return;
+              }
+              
+              // If no data and not in error state, also ignore
+              if (fileListRequestAttempts < maxFileListRequestAttempts) {
+                  return;
+              }
+              
+              return;
+          }
+          
+          // Check for error cases
+          if (text === "SD_INIT_FAILED") {
+              addDebugLog("SD card initialization failed");
+              updateFileStatus("SD card initialization failed, please check SD card", true);
+              fileListRequestInProgress = false;
+              return;
+          }
+          
+          if (text === "NO_ROOT_DIR") {
+              addDebugLog("Root directory not found");
+              updateFileStatus("Root directory not found, SD card may not be formatted correctly", true);
+              fileListRequestInProgress = false;
+              return;
+          }
+          
+          if (text === "NO_FILES") {
+              addDebugLog("No files found on device");
+              updateFileStatus("No files found on device", false);
+              // Only clear if there are indeed no files
+              fileList = [];
+              updateFileListUI();
+              fileListRequestInProgress = false;
+              return;
+          }
 
-  </script>
-</body>
-</html>
+          // Mark that valid file list has been received
+          fileListReceived = true;
+          fileListRequestInProgress = false;
+          fileListRequestAttempts = 0;
+          
+          updateFileStatus(LANGS[currentLang].fileStatusReceived);
+          
+          // Process file list
+          let files = [];
+          if (text.includes(';')) {
+              files = text.split(';').filter(item => item.trim() !== '');
+          } else if (text.trim() !== '') {
+              files = [text];
+          }
+          
+          if (files.length === 0) {
+              addDebugLog("Parsed file list is empty, ignored");
+              return;
+          }
+          
+          addDebugLog(`Parsed ${files.length} file items`);
+          
+
+
+
+
+          const newFileList = files.map((file, index) => {
+              const parts = file.split(',');
+              if (parts.length === 0) return null;
+              
+              const fileObj = {
+                  name: parts[0] || `file_${index}`,
+                  size: parts.length > 1 ? parseInt(parts[1]) || 0 : 0,
+                  id: parts.length > 2 ? parts[2] : parts[0] || `file_${index}`
+              };
+              
+              if (!fileObj.name || fileObj.name.trim() === '') {
+                  fileObj.name = `file_${index}`;
+              }
+              
+              addDebugLog(`File ${index}: name=${fileObj.name}, size=${fileObj.size}, ID=${fileObj.id}`);
+              return fileObj;
+          }).filter(file => file !== null);
+          
+          // Only update if new file list is not empty
+          if (newFileList.length > 0) {
+              fileList = newFileList;
+              console.log("Final file list:", fileList);
+              updateFileListUI();
+              
+              // Add confirmation log
+              addDebugLog(`File list update completed, currently have ${fileList.length} files`);
+          }
+      } catch (error) {
+          addDebugLog(`Error parsing file list: ${error}`);
+          console.error("Error parsing file list:", error);
+          updateFileStatus(LANGS[currentLang].fileStatusError, true);
+          fileListRequestInProgress = false;
+          // Absolutely do not clear existing file list
+      }
+  }
+  // Modify requestFileList function, add request status control
+  function requestFileList() {
+    if (!writeCharacteristic) {
+      alert(LANGS[currentLang].notConnected);
+      addDebugLog("Error: Not connected, cannot request file list");
+      updateFileStatus(LANGS[currentLang].fileStatusError, true);
+      return;
+    }
+    
+    // 重置状态以强制获取最新文件列表
+    fileListRequestInProgress = false;
+    fileListReceived = false;
+    fileListRequestAttempts = 0;
+    fileList = []; // 清空当前文件列表
+    
+    fileListRequestInProgress = true;
+    fileListRequestAttempts++;
+    
+    updateFileStatus(LANGS[currentLang].fileStatusRequesting + ` (Attempt ${fileListRequestAttempts}/${maxFileListRequestAttempts})`);
+    
+    const encoder = new TextEncoder();
+    const command = "REQUEST_FILE_LIST";
+    const data = encoder.encode(command);
+    
+    writeCharacteristic.writeValue(data)
+      .then(() => {
+        addDebugLog(`Sent file list request: ${command}`);
+        
+        setTimeout(() => {
+          if (!fileListReceived && fileListRequestAttempts < maxFileListRequestAttempts) {
+            addDebugLog(`No file list response received, trying again (${fileListRequestAttempts}/${maxFileListRequestAttempts})`);
+            fileListRequestInProgress = false;
+            requestFileList();
+          } else if (!fileListReceived) {
+            addDebugLog("Reached maximum file list request attempts");
+            updateFileStatus(LANGS[currentLang].fileStatusError, true);
+            fileListRequestInProgress = false;
+          }
+        }, 3000);
+      })
+      .catch(err => {
+        addDebugLog(`File list request failed: ${command} - ${err}`);
+        console.error("File list request failed:", err);
+        updateFileStatus(LANGS[currentLang].fileStatusError, true);
+        fileListRequestInProgress = false;
+      });
+  }
+  // Add missing functions - add near file list related functions
+  function updateDownloadButtonState() {
+      const selectedCheckboxes = document.querySelectorAll('#fileList input[type="checkbox"]:checked');
+      const downloadButton = document.getElementById('btnDownloadSelected');
+      
+      if (downloadButton) {
+          downloadButton.disabled = selectedCheckboxes.length === 0;
+      }
+  }
+
+  function updateFileListUI() {
+      const fileListElement = document.getElementById('fileList');
+      
+      if (!fileListElement) {
+          console.error("fileList element not found");
+          addDebugLog("Error: fileList element not found");
+          return;
+      }
+      
+      // Force display of file list container
+      fileListElement.style.display = 'block';
+      fileListElement.style.visibility = 'visible';
+      fileListElement.style.opacity = '1';
+      
+      // Clear current list
+      fileListElement.innerHTML = '';
+      
+      addDebugLog(`Updating UI: file list length = ${fileList.length}`);
+      console.log("Current fileList:", fileList);
+      
+      if (fileList.length === 0) {
+          const noFilesMessage = document.createElement('div');
+          noFilesMessage.className = 'no-files';
+          noFilesMessage.id = 'noFilesMessage';
+          noFilesMessage.textContent = LANGS[currentLang].noFiles;
+          noFilesMessage.style.padding = '20px';
+          noFilesMessage.style.textAlign = 'center';
+          noFilesMessage.style.color = '#666';
+          fileListElement.appendChild(noFilesMessage);
+          addDebugLog("UI update: showing no files message");
+      } else {
+          fileList.forEach((file, index) => {
+              if (!file || !file.name) {
+                  console.error("Invalid file object:", file);
+                  return;
+              }
+              
+            // const sizeKB = Math.round(file.size / 1024);
+              const sizeKB = (file.size / 1024).toFixed(2);
+              const fileItem = document.createElement('div');
+              fileItem.className = 'file-item';
+              fileItem.style.display = 'flex';
+              fileItem.style.alignItems = 'center';
+              fileItem.style.padding = '12px';
+              fileItem.style.borderBottom = '1px solid #f0f0f0';
+              fileItem.style.backgroundColor = '#ffffff';
+              
+              fileItem.innerHTML = `
+                  <input type="checkbox" id="file-${index}" value="${file.id || file.name}" data-filename="${file.name}" style="margin-right: 12px;">
+                  <label class="file-name" for="file-${index}" style="flex-grow: 1; font-family: 'Courier New', monospace; font-size: 14px; color: #2c3e50;">${file.name}</label>
+                  <span class="file-size" style="color: #7f8c8d; font-size: 13px; min-width: 60px; text-align: right;">${sizeKB} KB</span>
+              `;
+              
+              fileListElement.appendChild(fileItem);
+              addDebugLog(`UI update: added file item - ${file.name} (${sizeKB} KB)`);
+          });
+          
+          addDebugLog(`UI update completed: showing ${fileList.length} files`);
+      }
+      
+      // Add checkbox change listeners
+      const checkboxes = document.querySelectorAll('#fileList input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', updateDownloadButtonState);
+      });
+      
+      // Update button state
+      updateDownloadButtonState();
+      
+      // Force redraw
+      setTimeout(() => {
+          fileListElement.style.display = 'none';
+          setTimeout(() => {
+              fileListElement.style.display = 'block';
+          }, 10);
+      }, 10);
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+      // Initialize temperature chart
+      initTempChart();
+      
+      // Initialize file list UI
+      updateFileListUI();
+      
+      // Initialize download button state
+      updateDownloadButtonState();
+
+      addDebugLog("Page loaded successfully");
+      
+      // Log PWA status
+      if (window.navigator.standalone) {
+        addDebugLog("PWA: Running as standalone app on iOS");
+      }
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        addDebugLog("PWA: Running as standalone app on Android/Desktop");
+      }
+  });
+
+  async function processDownloadQueue() {
+      if (downloadQueue.length === 0) {
+          isDownloading = false;
+          addDebugLog("Download queue is empty");
+          setTimeout(() => {
+              document.getElementById('downloadProgress').style.display = 'none';
+          }, 2000);
+          return;
+      }
+      
+      isDownloading = true;
+      const file = downloadQueue.shift();
+      
+      addDebugLog(`Starting download: ${file.name} (ID: ${file.id})`);
+      updateDownloadProgress(file.name, 5, "Initializing download...");
+      
+      try {
+          // Reset transfer state
+          fileChunks = [];
+          isFileTransferInProgress = false;
+          currentDownloadFileId = null;
+          
+          // Store the requested file for fallback purposes
+          window.lastRequestedFile = file.name;
+          
+          // Send download request
+          const encoder = new TextEncoder();
+          const command = `DOWNLOAD:${file.id}`;
+          const data = encoder.encode(command);
+          
+          await writeCharacteristic.writeValue(data);
+          addDebugLog(`Download request sent: ${command}`);
+          updateDownloadProgress(file.name, 20, "Download request sent, waiting for data...");
+          
+          // Set timeout for entire file transfer
+          const downloadTimeout = setTimeout(() => {
+              addDebugLog(`Download timeout: ${file.name}`);
+              updateDownloadProgress(file.name, 0, "Download timeout, skipping this file");
+              isFileTransferInProgress = false;
+              currentDownloadFileId = null;
+              // Continue with next file
+              setTimeout(() => processDownloadQueue(), 1000);
+          }, 60000); // 60 second timeout for entire file
+          
+          window.currentDownloadTimeout = downloadTimeout;
+          
+      } catch (err) {
+          addDebugLog(`Download request failed: ${file.name} - ${err}`);
+          updateDownloadProgress(file.name, 0, "Download failed");
+          // Continue with next file
+          setTimeout(() => processDownloadQueue(), 1000);
+      }
+  }
+
+  // Modify handleFileChunk function, add stricter filtering
+  function handleFileChunk(value) {
+      const textChunk = new TextDecoder().decode(value.buffer);
+      
+      // Clear download timeout
+      if (window.currentDownloadTimeout) {
+          clearTimeout(window.currentDownloadTimeout);
+          window.currentDownloadTimeout = null;
+      }
+      
+      // Strict check: only process file transfer related data
+      if (textChunk.startsWith("FILE_ID:")) {
+          currentFileId = textChunk.substring(8).trim();
+          filesData[currentFileId] = [];
+          addDebugLog(`Starting file reception: ${currentFileId}`);
+          updateDownloadProgress(currentFileId, 20, "Starting to receive file data...");
+          return;
+      } 
+      else if (textChunk === "EOF") {
+          if (currentFileId && filesData[currentFileId]) {
+              const totalChunks = filesData[currentFileId].length;
+              addDebugLog(`File reception completed: ${currentFileId}, total ${totalChunks} data chunks`);
+              updateDownloadProgress(currentFileId, 95, "File reception completed, preparing download...");
+              
+              setTimeout(() => {
+                  downloadFile(currentFileId);
+                  delete filesData[currentFileId];
+                  currentFileId = null;
+                  
+                  // Immediately process next file
+                  processDownloadQueue();
+              }, 100);
+          }
+          return;
+      }
+      else if (currentFileId) {
+          // File data chunk - store raw ArrayBuffer directly
+          if (!filesData[currentFileId]) {
+              filesData[currentFileId] = [];
+          }
+          
+          // Store raw ArrayBuffer
+          filesData[currentFileId].push(value.buffer.slice(0));
+          const chunkCount = filesData[currentFileId].length;
+          
+          // Update progress
+          const fileInfo = fileList.find(file => file.id === currentFileId);
+          if (fileInfo) {
+              const estimatedTotalChunks = Math.ceil(fileInfo.size / 512);
+              const progress = Math.min(90, 20 + (chunkCount / estimatedTotalChunks * 70));
+              updateDownloadProgress(currentFileId, progress, `Received ${chunkCount} data chunks`);
+          }
+          
+          return;
+      }
+      
+      // If we reach here, it's unrelated data, but log more detailed information for debugging
+      addDebugLog(`Received unrelated data, length: ${value.buffer.byteLength}, content: ${textChunk.substring(0, 50)}...`);
+  }
+      // Update download progress
+      function updateDownloadProgress(fileId, percent, status) {
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('downloadStatusText');
+        
+        if (progressBar && statusText) {
+          progressBar.style.width = percent + '%';
+          
+          // Enhanced progress display for large files
+          let progressText = `File ${fileId}: ${status}`;
+          if (percent > 0 && percent < 100) {
+              progressText += ` (${percent.toFixed(1)}%)`;
+          }
+          
+          // Add data transfer indicators for active downloads
+          if (percent > 10 && percent < 100) {
+              const dots = '.'.repeat((Math.floor(Date.now() / 500) % 4) + 1);
+              progressText += ` ${dots}`;
+          }
+          
+          statusText.textContent = progressText;
+          
+          // Show progress area
+          document.getElementById('downloadProgress').style.display = 'block';
+        }
+      }
+
+      // Select all files
+      function selectAllFiles() {
+        const checkboxes = document.querySelectorAll('#fileList input[type="checkbox"]');
+        const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+        
+        checkboxes.forEach(checkbox => {
+          checkbox.checked = !allChecked;
+        });
+        
+        addDebugLog(`${allChecked ? 'Deselected all' : 'Selected all'} files`);
+      }
+
+      // Replace downloadSelectedFiles function
+  function downloadSelectedFiles() {
+      const selectedCheckboxes = document.querySelectorAll('#fileList input[type="checkbox"]:checked');
+      
+      if (selectedCheckboxes.length === 0) {
+          alert("Please select at least one file");
+          addDebugLog("Download error: No files selected");
+          return;
+      }
+      
+      if (!writeCharacteristic) {
+          alert(LANGS[currentLang].notConnected);
+          addDebugLog("Download error: Not connected");
+          return;
+      }
+      
+      const selectedFiles = Array.from(selectedCheckboxes).map(checkbox => {
+          return {
+              id: checkbox.value,
+              name: checkbox.getAttribute('data-filename')
+          };
+      });
+      
+      addDebugLog(`Starting download of ${selectedFiles.length} files: ${selectedFiles.map(f => f.name).join(', ')}`);
+      
+      // Clear download queue and add new files
+      downloadQueue = [];
+      selectedFiles.forEach(file => {
+          downloadQueue.push(file);
+      });
+      
+      // Start download
+      if (!isDownloading) {
+          processDownloadQueue();
+      }
+  }
+
+      // Simulate file data for testing
+      function simulateFiles() {
+        addDebugLog("Generating simulated file data...");
+        fileList = [
+          { name: 'temperature_log_20250101.csv', size: 24576, id: 'log1' },
+          { name: 'temperature_log_20250102.csv', size: 31242, id: 'log2' },
+          { name: 'settings_backup.json', size: 1024, id: 'settings' }
+        ];
+        updateFileListUI();
+        updateFileStatus("Simulated file data loaded");
+        addDebugLog("Generated 3 simulated files");
+      }
+
+      async function writeTargetTemp() {
+        const inputStr = document.getElementById('tempInput').value.trim();
+        const inputNum = parseFloat(inputStr);
+
+        if (isNaN(inputNum) || inputNum < 0 || inputNum > 99.9) {
+          alert(LANGS[currentLang].alert);
+          addDebugLog(`Temperature setting error: ${inputStr}`);
+          return;
+        }
+
+        const intValue = Math.round(inputNum * 10);
+        const encodedStr = intValue.toString().padStart(3, '0');
+        const encoder = new TextEncoder();
+        const data = encoder.encode(encodedStr);
+
+        if (writeCharacteristic) {
+          try {
+            await writeCharacteristic.writeValue(data);
+            addDebugLog(`Temperature setting successful: ${inputNum}°C`);
+            console.log("Write successful:", encodedStr);
+          } catch (err) {
+            console.error("Write failed:", err);
+          }
+        } else {
+          alert(LANGS[currentLang].notConnected);
+          addDebugLog("Temperature setting error: Not connected");
+        }
+      }
+
+      function askForDownload() {
+        fileChunks = []; // Clear previous data
+        const encoder = new TextEncoder();
+        const data = encoder.encode("DOWNLOAD_CSV");
+        if (writeCharacteristic) {
+          writeCharacteristic.writeValue(data)
+            .then(() => {
+              console.log("Download command sent");
+            })
+            .catch(err => {
+              console.error("Download command failed:", err);
+            });
+        } else {
+          alert(LANGS[currentLang].notConnected);
+        }
+      }
+
+      // Chart.js temperature/time chart setup
+      let tempChart = null;
+      let tempData = {
+        labels: [],
+        datasets: [{
+          label: 'Temperature (°C)',
+          data: [], 
+          borderColor: '#3498db',
+          backgroundColor: 'rgba(52,152,219,0.08)',
+          tension: 0.2,
+          pointRadius: 2,
+          fill: true
+        }]
+      };
+
+      function initTempChart() {
+        const ctx = document.getElementById('tempChart').getContext('2d');
+        tempChart = new Chart(ctx, {
+          type: 'line',
+          data: tempData,
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: {
+                type: 'time',
+                time: { unit: 'minute', tooltipFormat: 'HH:mm:ss' },
+                title: { display: true, text: 'Time' }
+              },
+              y: {
+                title: { display: true, text: 'Temperature (°C)' },
+                suggestedMin: 0,
+                suggestedMax: 50
+              }
+            }
+          }
+        });
+      }
+
+      switchLang(currentLang);
+      window.addEventListener('DOMContentLoaded', initTempChart);
+
+      // Update chart when new temperature arrives
+      function addTempPoint(temp) {
+        if (!tempChart) return; 
+        const now = new Date();
+        tempData.labels.push(now);
+        tempData.datasets[0].data.push(temp);
+        // Keep only latest 60 points
+        if (tempData.labels.length > 60) {
+          tempData.labels.shift();
+          tempData.datasets[0].data.shift();
+        }
+        tempChart.update();
+      }
+
+
+  function downloadFile() {
+    if (fileChunks.length === 0) {
+      alert('No data received!');
+      addDebugLog('[FILE] ERROR: No chunks to assemble');
+      return;
+    }
+    
+    addDebugLog(`[FILE] Assembling file from ${fileChunks.length} chunks`);
+    
+    // Calculate total size
+    let totalLength = fileChunks.reduce((sum, arr) => sum + arr.length, 0);
+    addDebugLog(`[FILE] Total data size: ${totalLength} bytes`);
+    
+    // Combine all chunks
+    let allData = new Uint8Array(totalLength);
+    let offset = 0;
+    
+    for (let i = 0; i < fileChunks.length; i++) {
+      const chunk = fileChunks[i];
+      allData.set(chunk, offset);
+      offset += chunk.length;
+      addDebugLog(`[FILE] Chunk ${i+1}/${fileChunks.length}: ${chunk.length} bytes`);
+    }
+    
+    // Convert to text and create download
+    let fileText = new TextDecoder().decode(allData);
+    addDebugLog(`[FILE] File text length: ${fileText.length} characters`);
+    addDebugLog(`[FILE] First 100 chars: ${fileText.substring(0, 100)}`);
+    
+    // Create and trigger download
+    let blob = new Blob([fileText], {type: 'text/csv'});
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = 'temperature_data.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    addDebugLog('[FILE] Download completed successfully');
+    fileChunks = []; // Clear for next download
+  }
+
+  function downloadCSVFile(fileId) {
+    if (!currentCSVContent || currentCSVContent.length === 0) {
+      addDebugLog(`[CSV] ❌ ERROR: No CSV content to download for ${fileId}`);
+      
+      // Fallback: Try to reconstruct from chunks if available
+      if (fileChunks.length > 0) {
+        addDebugLog(`[CSV] 🔄 Attempting fallback reconstruction from ${fileChunks.length} chunks`);
+        let totalLength = fileChunks.reduce((sum, arr) => sum + arr.length, 0);
+        let allData = new Uint8Array(totalLength);
+        let offset = 0;
+        
+        for (let i = 0; i < fileChunks.length; i++) {
+          const chunk = fileChunks[i];
+          allData.set(chunk, offset);
+          offset += chunk.length;
+        }
+        
+        currentCSVContent = new TextDecoder().decode(allData);
+        addDebugLog(`[CSV] 🔄 Fallback reconstruction successful: ${currentCSVContent.length} characters`);
+      } else {
+        alert('No CSV data received for file: ' + fileId);
+        return;
+      }
+    }
+    
+    addDebugLog(`[CSV] 📊 Creating CSV download for ${fileId}: ${currentCSVContent.length} characters`);
+    
+    // Validate CSV content
+    const lines = currentCSVContent.split('\n').filter(line => line.trim() !== '');
+    addDebugLog(`[CSV] 📊 CSV validation: ${lines.length} lines detected`);
+    
+    if (lines.length > 0) {
+      addDebugLog(`[CSV] 📊 First line: "${lines[0].substring(0, 100)}..."`);
+      if (lines.length > 1) {
+        addDebugLog(`[CSV] 📊 Second line: "${lines[1].substring(0, 100)}..."`);
+      }
+    }
+    
+    // Create and trigger CSV download
+    const blob = new Blob([currentCSVContent], {type: 'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileId.endsWith('.csv') ? fileId : (fileId + '.csv');
+    
+    // Add download attributes for better compatibility
+    a.setAttribute('download', a.download);
+    a.style.display = 'none';
+    
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    addDebugLog(`[CSV] ✅ CSV download triggered: ${a.download} (${blob.size} bytes)`);
+    
+    // Clear CSV content for next file
+    currentCSVContent = '';
+    fileChunks = [];
+    
+    // Update progress to 100%
+    updateDownloadProgress(fileId, 100, `CSV download completed: ${lines.length} rows`);
+  }
+
+  function downloadCompletedFile(fileId) {
+    if (fileChunks.length === 0) {
+      addDebugLog(`[FILE] ERROR: No chunks to assemble for ${fileId}`);
+      alert('No data received for file: ' + fileId);
+      return;
+    }
+    
+    addDebugLog(`[FILE] Assembling ${fileId} from ${fileChunks.length} chunks`);
+    
+    // Calculate total size
+    let totalLength = fileChunks.reduce((sum, arr) => sum + arr.length, 0);
+    addDebugLog(`[FILE] Total data size: ${totalLength} bytes`);
+    
+    // Combine all chunks
+    let allData = new Uint8Array(totalLength);
+    let offset = 0;
+    
+    for (let i = 0; i < fileChunks.length; i++) {
+      const chunk = fileChunks[i];
+      allData.set(chunk, offset);
+      offset += chunk.length;
+      addDebugLog(`[FILE] Chunk ${i+1}/${fileChunks.length}: ${chunk.length} bytes`);
+    }
+    
+    // Convert to text
+    let fileText = new TextDecoder().decode(allData);
+    addDebugLog(`[FILE] File text length: ${fileText.length} characters`);
+    
+    // Create and trigger download
+    let blob = new Blob([fileText], {type: 'text/csv'});
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = fileId || 'downloaded_file.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    addDebugLog(`[FILE] Download completed: ${fileId}`);
+    fileChunks = []; // Clear for next file
+    
+    // Update progress to 100%
+    updateDownloadProgress(fileId, 100, "Download completed");
+  }
+
+    </script>
+  </body>
+  </html>
