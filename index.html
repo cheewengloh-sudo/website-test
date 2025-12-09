@@ -2,8 +2,18 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>QRF 蓝牙温控面板</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- Dynamic favicon (will be converted to PNG for PWA) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='64' fill='%233498db'/%3E%3Cpath d='M96 40a56 56 0 1 1 0 112 56 56 0 0 1 0-112zm0 16a40 40 0 1 0 0 80 40 40 0 0 0 0-80zm-8 40a8 8 0 1 1 16 0 8 8 0 0 1-16 0z' fill='%23ffffff'/%3E%3C/svg%3E" sizes="any" type="image/svg+xml">
+  
+  <title>QRF Bluetooth Thermostat</title>
+  
   <style>
+    /* Your existing CSS remains the same */
     * {
       box-sizing: border-box;
     }
@@ -13,6 +23,8 @@
       background: #f5f7fa;
       padding: 40px;
       color: #333;
+      margin: 0;
+      min-height: 100vh;
     }
 
     h1 {
@@ -353,9 +365,36 @@
     visibility: visible !important;
     opacity: 1 !important;
     }
+
+    /* Install button style */
+    #installButton {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #2ecc71;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+      cursor: pointer;
+      z-index: 1000;
+      display: none;
+    }
+
+    #installButton:hover {
+      background-color: #27ae60;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(46, 204, 113, 0.4);
+    }
   </style>
 </head>
 <body>
+  <!-- Install button -->
+  <button id="installButton">Install App</button>
+
   <!-- Multilanguage Support Example -->
   <div style="text-align:right; margin-bottom:10px;">
     <select id="langSelect" onchange="switchLang(this.value)">
@@ -450,6 +489,195 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <script>
+    // ============================
+    // PWA Functionality
+    // ============================
+    let deferredPrompt;
+    const installButton = document.getElementById('installButton');
+    
+    // Listen for beforeinstallprompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+      console.log('PWA Install prompt available!');
+      addDebugLog('PWA: Install prompt available');
+      
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      
+      // Show the install button
+      installButton.style.display = 'block';
+      
+      // Update button text based on language
+      updateInstallButtonText();
+    });
+    
+    // Install button click handler
+    installButton.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        // Show the install prompt
+        deferredPrompt.prompt();
+        
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        addDebugLog(`PWA: User ${outcome === 'accepted' ? 'accepted' : 'dismissed'} the install prompt`);
+        
+        // Hide the install button
+        installButton.style.display = 'none';
+        
+        // Clear the deferredPrompt variable
+        deferredPrompt = null;
+      }
+    });
+    
+    // Listen for app installed event
+    window.addEventListener('appinstalled', (evt) => {
+      console.log('PWA was installed');
+      addDebugLog('PWA: App was successfully installed');
+      installButton.style.display = 'none';
+    });
+    
+    // Check if running as standalone PWA
+    if (window.matchMedia('(display-mode: standalone)').matches || 
+        window.navigator.standalone === true) {
+      console.log('Running as standalone PWA');
+      addDebugLog('PWA: Running in standalone mode');
+    }
+    
+    // ============================
+    // Dynamic Manifest Generation
+    // ============================
+    const iconSize = 192;
+    const hash = document.location.hash || '#main';
+
+    // dynamically created manifest
+    const manifest = {
+      name: 'QRF Thermostat ' + hash.substring(1),
+      short_name: 'QRF Thermostat',
+      description: 'Bluetooth temperature control panel',
+      display: 'standalone',
+      theme_color: '#3498db',
+      background_color: '#f5f7fa',
+      start_url: window.location.href,
+      scope: window.location.origin + '/',
+      orientation: 'portrait'
+    };
+
+    // convert the SVG favicon to PNG for platforms that don't support SVG
+    (async function() {
+      const svgIconLink = document.querySelector('link[rel="icon"]');
+
+      // convert from SVG string to PNG data URL
+      const pngDataUrl = await svgToPng(svgIconLink.href, iconSize);
+
+      // set the icon meta tags to the new PNG
+      setIcon("link[rel='icon']", pngDataUrl, iconSize);
+      setIcon("link[rel='apple-touch-icon']", pngDataUrl, 180);
+
+      // dynamically create manifest
+      manifest.icons =  [{
+        src: pngDataUrl,
+        sizes: `${iconSize}x${iconSize}`,
+        type: 'image/png',
+        purpose: 'any maskable'
+      }]
+
+      // set the manifest meta tag data url
+      setManifest(manifest);
+
+      // generate and set the iOS startup image
+      const startupImageDataUrl = await createStartupImage(
+        svgIconLink.href,
+        manifest.background_color
+      );
+      const startupLink = document.createElement('link');
+      startupLink.rel = 'apple-touch-startup-image';
+      startupLink.href = startupImageDataUrl;
+      document.head.appendChild(startupLink);
+      
+      addDebugLog('PWA: Manifest and icons generated');
+    })();
+
+    function setManifest(manifest) {
+      // Remove existing manifest if any
+      const existingManifest = document.querySelector('link[rel="manifest"]');
+      if (existingManifest) {
+        existingManifest.remove();
+      }
+      
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      const b64manifest = btoa(JSON.stringify(manifest));
+      link.href = "data:application/json;base64," + b64manifest;
+      document.head.appendChild(link);
+    }
+
+    function setIcon(query, iconurl, size) {
+      const iconLink = document.querySelector(query);
+      if (iconLink) {
+        iconLink.href = iconurl;
+        iconLink.type = 'image/png';
+        if (size) {
+          iconLink.setAttribute('sizes', `${size}x${size}`);
+        }
+      }
+    }
+
+    function svgToPng(svgDataUrl, size) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, size, size);
+          const pngDataUrl = canvas.toDataURL('image/png');
+          resolve(pngDataUrl);
+        };
+        img.onerror = reject;
+        img.src = svgDataUrl;
+      });
+    }
+
+    // Safari needs a startup image
+    function createStartupImage(svgDataUrl, bgColor) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const dpr = window.devicePixelRatio || 1;
+          const canvas = document.createElement('canvas');
+          canvas.width = window.screen.width * dpr;
+          canvas.height = window.screen.height * dpr;
+          const ctx = canvas.getContext('2d');
+
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          const iconDisplaySize = canvas.width * 0.25;
+          const x = (canvas.width - iconDisplaySize) / 2;
+          const y = (canvas.height - iconDisplaySize) / 2;
+          ctx.drawImage(img, x, y, iconDisplaySize, iconDisplaySize);
+
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = reject;
+        img.src = svgDataUrl;
+      });
+    }
+    
+    // Update install button text based on language
+    function updateInstallButtonText() {
+      if (installButton.style.display === 'block') {
+        installButton.textContent = currentLang === 'zh' ? '安装应用' : 'Install App';
+      }
+    }
+
+    // ============================
+    // Original Application Code
+    // ============================
     const LANGS = {
       zh: {
         title: "蓝牙温控面板",
@@ -541,6 +769,9 @@
           fileStatus.className = 'status-info';
         }
       }
+      
+      // Update install button text
+      updateInstallButtonText();
     }
 
     const serviceUUID = 'abcd0000-0000-1000-8000-00805f9b0131';
@@ -816,7 +1047,7 @@ function refreshFileList() {
                         if (writeCharacteristic) {
                             const ackMessage = 'ACK_FILE_ID';
                             writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
-                            addDebugLog(`[ACK] � Sent acknowledgment: ${ackMessage}`);
+                            addDebugLog(`[ACK]   Sent acknowledgment: ${ackMessage}`);
                         } else {
                             addDebugLog(`[ACK] ❌ Cannot send ACK - no write characteristic`);
                         }
@@ -1265,6 +1496,14 @@ window.addEventListener('DOMContentLoaded', function() {
     updateDownloadButtonState();
 
     addDebugLog("Page loaded successfully");
+    
+    // Log PWA status
+    if (window.navigator.standalone) {
+      addDebugLog("PWA: Running as standalone app on iOS");
+    }
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      addDebugLog("PWA: Running as standalone app on Android/Desktop");
+    }
 });
 
 async function processDownloadQueue() {
