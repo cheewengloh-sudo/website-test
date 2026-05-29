@@ -7,12 +7,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
-  <!-- Dynamic favicon (will be converted to PNG for PWA) -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='64' fill='%233498db'/%3E%3Cpath d='M96 40a56 56 0 1 1 0 112 56 56 0 0 1 0-112zm0 16a40 40 0 1 0 0 80 40 40 0 0 0 0-80zm-8 40a8 8 0 1 1 16 0 8 8 0 0 1-16 0z' fill='%23ffffff'/%3E%3C/svg%3E" sizes="any" type="image/svg+xml">
   
   <title>QRF Bluetooth Thermostat</title>
   
   <style>
+    /* Your existing CSS - unchanged */
     * {
       box-sizing: border-box;
     }
@@ -643,7 +643,14 @@
     }
 
     // ============================
-    // Original Application Code
+    // Helper function for case-insensitive UUID matching
+    // ============================
+    function uuidMatches(uuid1, uuid2) {
+      return uuid1.toUpperCase() === uuid2.toUpperCase();
+    }
+
+    // ============================
+    // Original Application Code - with CASE-INSENSITIVE UUID handling
     // ============================
     const LANGS = {
       zh: {
@@ -739,22 +746,23 @@
       updateInstallButtonText();
     }
 
-    // 🔥 CRITICAL FIX: UPPERCASE UUIDs to match firmware
-    const serviceUUID = 'ABCD0000-0000-1000-8000-00805F9B0131';
-    const writeUUID = 'ABCD0001-0000-1000-8000-00805F9B0131';
+    // 🔥 CROSS-PLATFORM FIX: Use lowercase UUIDs (works on both Android and iOS)
+    // Web Bluetooth specification standardizes on lowercase UUIDs
+    const serviceUUID = 'abcd0000-0000-1000-8000-00805f9b0131';
+    const writeUUID = 'abcd0001-0000-1000-8000-00805f9b0131';
     const notifyUUIDs = [
-      'ABCD0002-0000-1000-8000-00805F9B0131',
-      'ABCD0004-0000-1000-8000-00805F9B0131',
-      'ABCD2A19-0000-1000-8000-00805F9B0131',
-      'ABCD1001-0000-1000-8000-00805F9B0131',
-      'ABCD1002-0000-1000-8000-00805F9B0131'
+      'abcd0002-0000-1000-8000-00805f9b0131',
+      'abcd0004-0000-1000-8000-00805f9b0131',
+      'abcd2a19-0000-1000-8000-00805f9b0131',
+      'abcd1001-0000-1000-8000-00805f9b0131',
+      'abcd1002-0000-1000-8000-00805f9b0131'
     ];
 
     const notifyDisplayMap = {
-      'ABCD0002-0000-1000-8000-00805F9B0131': 'currentTemp',
-      'ABCD0004-0000-1000-8000-00805F9B0131': 'targetTemp',
-      'ABCD2A19-0000-1000-8000-00805F9B0131': 'batteryLevel',
-      'ABCD1002-0000-1000-8000-00805F9B0131': 'fileList'
+      'abcd0002-0000-1000-8000-00805f9b0131': 'currentTemp',
+      'abcd0004-0000-1000-8000-00805f9b0131': 'targetTemp',
+      'abcd2a19-0000-1000-8000-00805f9b0131': 'batteryLevel',
+      'abcd1002-0000-1000-8000-00805f9b0131': 'fileList'
     };
 
     let writeCharacteristic = null;
@@ -895,6 +903,8 @@
     async function connectBluetooth() {
       try {
         addDebugLog('Requesting Bluetooth device...');
+        addDebugLog('Using lowercase UUIDs (Web Bluetooth standard)');
+        
         const device = await navigator.bluetooth.requestDevice({
           acceptAllDevices: true,
           optionalServices: [serviceUUID]
@@ -912,23 +922,30 @@
         for (const char of characteristics) {
           const uuid = char.uuid;
           addDebugLog(`Characteristic: ${uuid}`);
-
-          if (uuid === writeUUID) {
+          
+          // 🔥 CASE-INSENSITIVE comparison
+          if (uuidMatches(uuid, writeUUID)) {
             writeCharacteristic = char;
-            addDebugLog('Found write characteristic');
+            addDebugLog('✅ Found write characteristic (case-insensitive match)');
             continue;
           }
 
-          if (notifyUUIDs.includes(uuid)) {
-            addDebugLog(`Enabling notifications: ${uuid}`);
+          // Check if this UUID matches any in our notify list (case-insensitive)
+          const matchingNotifyUUID = notifyUUIDs.find(notifyUUID => uuidMatches(uuid, notifyUUID));
+          
+          if (matchingNotifyUUID) {
+            addDebugLog(`🔔 Enabling notifications for: ${uuid} (matches ${matchingNotifyUUID})`);
             await char.startNotifications();
             char.addEventListener('characteristicvaluechanged', (event) => {
               const value = event.target.value;
               const uuid = event.target.uuid;
-              const spanId = notifyDisplayMap[uuid];
+              // Use case-insensitive lookup for display map
+              const matchingDisplayKey = Object.keys(notifyDisplayMap).find(key => uuidMatches(uuid, key));
+              const spanId = matchingDisplayKey ? notifyDisplayMap[matchingDisplayKey] : null;
               let parsed = '';
               
-              if (uuid === 'ABCD1001-0000-1000-8000-00805F9B0131') {
+              // Check for file characteristic (case-insensitive)
+              if (uuidMatches(uuid, 'abcd1001-0000-1000-8000-00805f9b0131')) {
                 const now = new Date();
                 const timestamp = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
                 const rawData = new Uint8Array(value.buffer);
@@ -944,118 +961,117 @@
                 addDebugLog(`[BLE-COUNT] Total file notifications received: ${window.bleNotificationCount}`);
               }
 
-              switch (uuid) {
-                case 'ABCD0002-0000-1000-8000-00805F9B0131':
-                  const tempVal = parseFixedPointTemp(value);
-                  parsed = tempVal.toFixed(1) + ' °C';
-                  addTempPoint(tempVal);
-                  break;
-                case 'ABCD0004-0000-1000-8000-00805F9B0131':
-                  parsed = parseFixedPointTemp(value).toFixed(1) + ' °C';
-                  break;
-                case 'ABCD2A19-0000-1000-8000-00805F9B0131':
-                  parsed = value.getUint8(0) + ' %';
-                  break;
-
-                case 'ABCD1001-0000-1000-8000-00805F9B0131':
-                  try {
-                    const value = event.target.value;
-                    const rawData = new Uint8Array(value.buffer);
-                    const textData = new TextDecoder().decode(value.buffer);
-                    
-                    const now = new Date();
-                    const timestamp = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
-                    addDebugLog(`[FILE] Raw notification at ${timestamp}: ${rawData.length} bytes, text: "${textData.substring(0, 100)}"`);
-                    
-                    if (textData.startsWith("FILE_ID:")) {
-                        currentDownloadFileId = textData.substring(8).trim();
-                        fileChunks = [];
-                        isFileTransferInProgress = true;
-                        fileTransferStartTime = Date.now();
-                        window.currentChunkNumber = 0;
-                        currentCSVContent = '';
-                        csvWriter = null;
-                        
-                        if (window.currentDownloadTimeout) {
-                            clearTimeout(window.currentDownloadTimeout);
-                        }
-                        
-                        addDebugLog(`[FILE] ✅ FILE_ID received for: ${currentDownloadFileId} at ${timestamp}`);
-                        updateDownloadProgress(currentDownloadFileId, 10, "Starting file transfer...");
-                        
-                        if (writeCharacteristic) {
-                            const ackMessage = 'ACK_FILE_ID';
-                            writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
-                            addDebugLog(`[ACK] Sent acknowledgment: ${ackMessage}`);
-                        } else {
-                            addDebugLog(`[ACK] ❌ Cannot send ACK - no write characteristic`);
-                        }
-                        return;
-                    }
-                    
-                    if (textData === "EOF") {
-                        addDebugLog(`[FILE] EOF received for file: ${currentDownloadFileId} at ${timestamp}`);
-                        
-                        if (isFileTransferInProgress && currentDownloadFileId) {
-                            addDebugLog(`[FILE] Transfer completed for ${currentDownloadFileId}. Total chunks: ${fileChunks.length}`);
-                            updateDownloadProgress(currentDownloadFileId, 95, "File transfer completed, creating CSV download...");
-                            
-                            if (window.currentDownloadTimeout) {
-                                clearTimeout(window.currentDownloadTimeout);
-                                window.currentDownloadTimeout = null;
-                            }
-                            
-                            setTimeout(() => {
-                                downloadCSVFile(currentDownloadFileId);
-                                isFileTransferInProgress = false;
-                                currentDownloadFileId = null;
-                                processDownloadQueue();
-                            }, 100);
-                        } else {
-                            addDebugLog(`[FILE] ⚠️ EOF received but no active transfer.`);
-                            setTimeout(() => {
-                                isFileTransferInProgress = false;
-                                currentDownloadFileId = null;
-                                processDownloadQueue();
-                            }, 1000);
-                        }
-                        return;
-                    }
-                    
-                    if (isFileTransferInProgress && currentDownloadFileId) {
-                        const chunkData = new Uint8Array(value.buffer);
-                        fileChunks.push(chunkData);
-                        window.currentChunkNumber++;
-                        const chunkText = new TextDecoder().decode(value.buffer);
-                        currentCSVContent += chunkText;
-                        
-                        const totalBytes = fileChunks.reduce((sum, chunk) => sum + chunk.length, 0);
-                        addDebugLog(`[FILE] ✅ Chunk ${fileChunks.length} received for ${currentDownloadFileId}. Total: ${totalBytes} bytes`);
-                        
-                        if (writeCharacteristic) {
-                            const ackMessage = `ACK_CHUNK_${window.currentChunkNumber}`;
-                            writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
-                            addDebugLog(`[ACK] Sent acknowledgment: ${ackMessage}`);
-                        } else {
-                            addDebugLog(`[ACK] ❌ Cannot send chunk ACK - no write characteristic`);
-                        }
-                        
-                        const fileInfo = fileList.find(file => file.id === currentDownloadFileId);
-                        if (fileInfo && fileInfo.size > 0) {
-                            const progress = Math.min(90, 10 + (totalBytes / fileInfo.size * 80));
-                            updateDownloadProgress(currentDownloadFileId, progress, `Chunk ${fileChunks.length} received`);
-                        }
-                    } else {
-                        addDebugLog(`[FILE] ❌ Received data chunk but no active transfer.`);
-                    }
-                    
-                  } catch (error) {
-                    addDebugLog(`[FILE] Error processing notification: ${error}`);
+              // Handle each characteristic type (case-insensitive)
+              if (uuidMatches(uuid, 'abcd0002-0000-1000-8000-00805f9b0131')) {
+                const tempVal = parseFixedPointTemp(value);
+                parsed = tempVal.toFixed(1) + ' °C';
+                addTempPoint(tempVal);
+              }
+              else if (uuidMatches(uuid, 'abcd0004-0000-1000-8000-00805f9b0131')) {
+                parsed = parseFixedPointTemp(value).toFixed(1) + ' °C';
+              }
+              else if (uuidMatches(uuid, 'abcd2a19-0000-1000-8000-00805f9b0131')) {
+                parsed = value.getUint8(0) + ' %';
+              }
+              else if (uuidMatches(uuid, 'abcd1001-0000-1000-8000-00805f9b0131')) {
+                try {
+                  const value = event.target.value;
+                  const rawData = new Uint8Array(value.buffer);
+                  const textData = new TextDecoder().decode(value.buffer);
+                  
+                  const now = new Date();
+                  const timestamp = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
+                  addDebugLog(`[FILE] Raw notification at ${timestamp}: ${rawData.length} bytes, text: "${textData.substring(0, 100)}"`);
+                  
+                  if (textData.startsWith("FILE_ID:")) {
+                      currentDownloadFileId = textData.substring(8).trim();
+                      fileChunks = [];
+                      isFileTransferInProgress = true;
+                      fileTransferStartTime = Date.now();
+                      window.currentChunkNumber = 0;
+                      currentCSVContent = '';
+                      csvWriter = null;
+                      
+                      if (window.currentDownloadTimeout) {
+                          clearTimeout(window.currentDownloadTimeout);
+                      }
+                      
+                      addDebugLog(`[FILE] ✅ FILE_ID received for: ${currentDownloadFileId} at ${timestamp}`);
+                      updateDownloadProgress(currentDownloadFileId, 10, "Starting file transfer...");
+                      
+                      if (writeCharacteristic) {
+                          const ackMessage = 'ACK_FILE_ID';
+                          writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
+                          addDebugLog(`[ACK] Sent acknowledgment: ${ackMessage}`);
+                      } else {
+                          addDebugLog(`[ACK] ❌ Cannot send ACK - no write characteristic`);
+                      }
+                      return;
                   }
-                  break;
-                case 'ABCD1002-0000-1000-8000-00805F9B0131':
-                  handleFileList(value);
-                  return;
+                  
+                  if (textData === "EOF") {
+                      addDebugLog(`[FILE] EOF received for file: ${currentDownloadFileId} at ${timestamp}`);
+                      
+                      if (isFileTransferInProgress && currentDownloadFileId) {
+                          addDebugLog(`[FILE] Transfer completed for ${currentDownloadFileId}. Total chunks: ${fileChunks.length}`);
+                          updateDownloadProgress(currentDownloadFileId, 95, "File transfer completed, creating CSV download...");
+                          
+                          if (window.currentDownloadTimeout) {
+                              clearTimeout(window.currentDownloadTimeout);
+                              window.currentDownloadTimeout = null;
+                          }
+                          
+                          setTimeout(() => {
+                              downloadCSVFile(currentDownloadFileId);
+                              isFileTransferInProgress = false;
+                              currentDownloadFileId = null;
+                              processDownloadQueue();
+                          }, 100);
+                      } else {
+                          addDebugLog(`[FILE] ⚠️ EOF received but no active transfer.`);
+                          setTimeout(() => {
+                              isFileTransferInProgress = false;
+                              currentDownloadFileId = null;
+                              processDownloadQueue();
+                          }, 1000);
+                      }
+                      return;
+                  }
+                  
+                  if (isFileTransferInProgress && currentDownloadFileId) {
+                      const chunkData = new Uint8Array(value.buffer);
+                      fileChunks.push(chunkData);
+                      window.currentChunkNumber++;
+                      const chunkText = new TextDecoder().decode(value.buffer);
+                      currentCSVContent += chunkText;
+                      
+                      const totalBytes = fileChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+                      addDebugLog(`[FILE] ✅ Chunk ${fileChunks.length} received for ${currentDownloadFileId}. Total: ${totalBytes} bytes`);
+                      
+                      if (writeCharacteristic) {
+                          const ackMessage = `ACK_CHUNK_${window.currentChunkNumber}`;
+                          writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
+                          addDebugLog(`[ACK] Sent acknowledgment: ${ackMessage}`);
+                      } else {
+                          addDebugLog(`[ACK] ❌ Cannot send chunk ACK - no write characteristic`);
+                      }
+                      
+                      const fileInfo = fileList.find(file => file.id === currentDownloadFileId);
+                      if (fileInfo && fileInfo.size > 0) {
+                          const progress = Math.min(90, 10 + (totalBytes / fileInfo.size * 80));
+                          updateDownloadProgress(currentDownloadFileId, progress, `Chunk ${fileChunks.length} received`);
+                      }
+                  } else {
+                      addDebugLog(`[FILE] ❌ Received data chunk but no active transfer.`);
+                  }
+                  
+                } catch (error) {
+                  addDebugLog(`[FILE] Error processing notification: ${error}`);
+                }
+              }
+              else if (uuidMatches(uuid, 'abcd1002-0000-1000-8000-00805f9b0131')) {
+                handleFileList(value);
+                return;
               }
 
               if (spanId) {
@@ -1065,6 +1081,12 @@
               addDebugLog(`Received notification [${uuid}]: ${parsed}`);
             });
           }
+        }
+
+        if (!writeCharacteristic) {
+          addDebugLog(`❌ ERROR: Write characteristic not found!`);
+          updateConnectionStatus(false);
+          return;
         }
 
         addDebugLog("Connection successful ✅");
@@ -1359,6 +1381,7 @@
       updateFileListUI();
       updateDownloadButtonState();
       addDebugLog("Page loaded successfully");
+      addDebugLog("Using case-insensitive UUID matching for cross-platform compatibility");
       
       if (window.navigator.standalone) {
         addDebugLog("PWA: Running as standalone app on iOS");
