@@ -407,6 +407,85 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(46, 204, 113, 0.4);
     }
+
+    /* Modal styles for iOS file saving */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 10001;
+    }
+    
+    .modal-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 500px;
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      max-height: 80%;
+      overflow: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    
+    .modal-content h3 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    
+    .modal-content textarea {
+      width: 100%;
+      height: 200px;
+      font-family: monospace;
+      font-size: 12px;
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      resize: vertical;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 15px;
+    }
+    
+    .modal-buttons button {
+      padding: 8px 16px;
+    }
+    
+    .btn-copy {
+      background-color: #27ae60;
+    }
+    
+    .btn-copy:hover {
+      background-color: #229954;
+    }
+    
+    .btn-close {
+      background-color: #95a5a6;
+    }
+    
+    .btn-close:hover {
+      background-color: #7f8c8d;
+    }
+    
+    .btn-share {
+      background-color: #9b59b6;
+    }
+    
+    .btn-share:hover {
+      background-color: #8e44ad;
+    }
   </style>
 </head>
 <body>
@@ -491,6 +570,19 @@
 
   <div class="footer" id="footerText">
     QRF 控制系统 © 2025
+  </div>
+
+  <!-- Modal for iOS file saving -->
+  <div id="csvModal" class="modal">
+    <div class="modal-content">
+      <h3 id="modalTitle">CSV Data - Copy or Share</h3>
+      <textarea id="csvDataTextarea" readonly></textarea>
+      <div class="modal-buttons">
+        <button id="modalCopyBtn" class="btn-copy">📋 Copy to Clipboard</button>
+        <button id="modalShareBtn" class="btn-share">📤 Share</button>
+        <button id="modalCloseBtn" class="btn-close">Close</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -650,7 +742,149 @@
     }
 
     // ============================
-    // Original Application Code - with CASE-INSENSITIVE UUID handling
+    // iOS File Saving Functions
+    // ============================
+    let currentModalCSV = '';
+    let currentModalFileName = '';
+    
+    function showCSVModal(csvContent, fileName) {
+      currentModalCSV = csvContent;
+      currentModalFileName = fileName;
+      
+      const modal = document.getElementById('csvModal');
+      const textarea = document.getElementById('csvDataTextarea');
+      const modalTitle = document.getElementById('modalTitle');
+      
+      modalTitle.textContent = `CSV Data - ${fileName}`;
+      textarea.value = csvContent;
+      modal.style.display = 'block';
+      addDebugLog(`[MODAL] CSV modal opened for ${fileName} (${csvContent.length} chars)`);
+    }
+    
+    function closeCSVModal() {
+      document.getElementById('csvModal').style.display = 'none';
+      addDebugLog('[MODAL] CSV modal closed');
+    }
+    
+    function copyCSVToClipboard() {
+      const textarea = document.getElementById('csvDataTextarea');
+      textarea.select();
+      textarea.setSelectionRange(0, 99999);
+      
+      navigator.clipboard.writeText(textarea.value).then(() => {
+        addDebugLog('[CLIPBOARD] CSV copied successfully');
+        alert('CSV data copied to clipboard! You can now paste it into Notes, Files, or any app.');
+      }).catch(() => {
+        // Fallback for older browsers
+        document.execCommand('copy');
+        addDebugLog('[CLIPBOARD] CSV copied using fallback method');
+        alert('CSV data copied to clipboard!');
+      });
+    }
+    
+    function shareCSVData() {
+      const csvData = currentModalCSV;
+      const fileName = currentModalFileName;
+      
+      // Try Web Share API with file
+      const blob = new Blob([csvData], {type: 'text/csv'});
+      const file = new File([blob], fileName.endsWith('.csv') ? fileName : (fileName + '.csv'), {type: 'text/csv'});
+      
+      if (navigator.share && navigator.canShare && navigator.canShare({files: [file]})) {
+        navigator.share({
+          title: 'Temperature Data',
+          text: `CSV data from ${fileName}`,
+          files: [file]
+        }).then(() => {
+          addDebugLog('[SHARE] CSV shared successfully via File API');
+          closeCSVModal();
+        }).catch(err => {
+          addDebugLog(`[SHARE] Share failed: ${err}`);
+          // Fallback: try sharing text
+          if (navigator.share) {
+            navigator.share({
+              title: 'Temperature Data',
+              text: csvData.substring(0, 2000) + (csvData.length > 2000 ? '...' : ''),
+            }).catch(e => addDebugLog(`[SHARE] Text share also failed: ${e}`));
+          } else {
+            addDebugLog('[SHARE] Web Share API not available');
+            alert('Share not available. Please use Copy to Clipboard instead.');
+          }
+        });
+      } else if (navigator.share) {
+        // Fallback: share as text
+        navigator.share({
+          title: 'Temperature Data',
+          text: csvData.substring(0, 2000) + (csvData.length > 2000 ? `\n\n... (${csvData.length} total characters)` : ''),
+        }).then(() => {
+          addDebugLog('[SHARE] CSV shared as text');
+          closeCSVModal();
+        }).catch(err => {
+          addDebugLog(`[SHARE] Text share failed: ${err}`);
+          copyCSVToClipboard();
+        });
+      } else {
+        addDebugLog('[SHARE] Web Share API not available on this device');
+        copyCSVToClipboard();
+      }
+    }
+    
+    // iOS-friendly download function
+    function saveFileIOS(csvContent, fileName) {
+      addDebugLog(`[IOS-SAVE] Attempting to save ${fileName} (${csvContent.length} chars)`);
+      
+      // Method 1: Try to use the File System Access API (modern browsers)
+      if ('showSaveFilePicker' in window) {
+        addDebugLog('[IOS-SAVE] Attempting File System Access API');
+        const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8'});
+        window.showSaveFilePicker({
+          suggestedName: fileName.endsWith('.csv') ? fileName : (fileName + '.csv'),
+          types: [{
+            description: 'CSV File',
+            accept: {'text/csv': ['.csv']}
+          }]
+        }).then(handle => {
+          return handle.createWritable().then(writable => {
+            return writable.write(blob).then(() => writable.close());
+          });
+        }).then(() => {
+          addDebugLog('[IOS-SAVE] File saved via File System API');
+          alert(`File saved: ${fileName}`);
+        }).catch(err => {
+          addDebugLog(`[IOS-SAVE] File System API cancelled or failed: ${err}`);
+          showCSVModal(csvContent, fileName);
+        });
+        return;
+      }
+      
+      // Method 2: Try blob download (works on Android, sometimes on iOS)
+      addDebugLog('[IOS-SAVE] Attempting blob download');
+      const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName.endsWith('.csv') ? fileName : (fileName + '.csv');
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up after a delay
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
+      
+      addDebugLog(`[IOS-SAVE] Blob download triggered for ${a.download}`);
+      
+      // Method 3: For iOS, also show modal as backup after a delay
+      setTimeout(() => {
+        addDebugLog('[IOS-SAVE] Showing modal backup for iOS users');
+        showCSVModal(csvContent, fileName);
+      }, 2000);
+    }
+
+    // ============================
+    // Original Application Code
     // ============================
     const LANGS = {
       zh: {
@@ -746,8 +980,7 @@
       updateInstallButtonText();
     }
 
-    // 🔥 CROSS-PLATFORM FIX: Use lowercase UUIDs (works on both Android and iOS)
-    // Web Bluetooth specification standardizes on lowercase UUIDs
+    // UUIDs in lowercase (Web Bluetooth standard)
     const serviceUUID = 'abcd0000-0000-1000-8000-00805f9b0131';
     const writeUUID = 'abcd0001-0000-1000-8000-00805f9b0131';
     const notifyUUIDs = [
@@ -783,6 +1016,18 @@
     let currentCSVContent = '';
     let csvWriter = null;
     let pendingDownload = null;
+
+    // Setup modal buttons
+    document.getElementById('modalCopyBtn').addEventListener('click', copyCSVToClipboard);
+    document.getElementById('modalShareBtn').addEventListener('click', shareCSVData);
+    document.getElementById('modalCloseBtn').addEventListener('click', closeCSVModal);
+    // Close modal when clicking outside
+    window.addEventListener('click', (e) => {
+      const modal = document.getElementById('csvModal');
+      if (e.target === modal) {
+        closeCSVModal();
+      }
+    });
 
     function handleFileListNotification(event) {
         const value = new TextDecoder().decode(event.target.value);
@@ -923,45 +1168,35 @@
           const uuid = char.uuid;
           addDebugLog(`Characteristic: ${uuid}`);
           
-          // 🔥 CASE-INSENSITIVE comparison
           if (uuidMatches(uuid, writeUUID)) {
             writeCharacteristic = char;
-            addDebugLog('✅ Found write characteristic (case-insensitive match)');
+            addDebugLog('✅ Found write characteristic');
             continue;
           }
 
-          // Check if this UUID matches any in our notify list (case-insensitive)
           const matchingNotifyUUID = notifyUUIDs.find(notifyUUID => uuidMatches(uuid, notifyUUID));
           
           if (matchingNotifyUUID) {
-            addDebugLog(`🔔 Enabling notifications for: ${uuid} (matches ${matchingNotifyUUID})`);
+            addDebugLog(`🔔 Enabling notifications for: ${uuid}`);
             await char.startNotifications();
             char.addEventListener('characteristicvaluechanged', (event) => {
               const value = event.target.value;
               const uuid = event.target.uuid;
-              // Use case-insensitive lookup for display map
               const matchingDisplayKey = Object.keys(notifyDisplayMap).find(key => uuidMatches(uuid, key));
               const spanId = matchingDisplayKey ? notifyDisplayMap[matchingDisplayKey] : null;
               let parsed = '';
               
-              // Check for file characteristic (case-insensitive)
               if (uuidMatches(uuid, 'abcd1001-0000-1000-8000-00805f9b0131')) {
                 const now = new Date();
                 const timestamp = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
                 const rawData = new Uint8Array(value.buffer);
                 const textData = new TextDecoder().decode(value.buffer);
-                addDebugLog(`[BLE-DEBUG] ${timestamp}: ${rawData.length}B | TEXT: "${textData}"`);
-                
-                if (textData !== "EOF") {
-                  addDebugLog(`[BLE-ALERT] 🔍 NON-EOF DATA DETECTED: "${textData.substring(0, 50)}..."`);
-                }
+                addDebugLog(`[BLE-DEBUG] ${timestamp}: ${rawData.length}B | TEXT: "${textData.substring(0, 100)}"`);
                 
                 if (!window.bleNotificationCount) window.bleNotificationCount = 0;
                 window.bleNotificationCount++;
-                addDebugLog(`[BLE-COUNT] Total file notifications received: ${window.bleNotificationCount}`);
               }
 
-              // Handle each characteristic type (case-insensitive)
               if (uuidMatches(uuid, 'abcd0002-0000-1000-8000-00805f9b0131')) {
                 const tempVal = parseFixedPointTemp(value);
                 parsed = tempVal.toFixed(1) + ' °C';
@@ -976,12 +1211,7 @@
               else if (uuidMatches(uuid, 'abcd1001-0000-1000-8000-00805f9b0131')) {
                 try {
                   const value = event.target.value;
-                  const rawData = new Uint8Array(value.buffer);
                   const textData = new TextDecoder().decode(value.buffer);
-                  
-                  const now = new Date();
-                  const timestamp = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
-                  addDebugLog(`[FILE] Raw notification at ${timestamp}: ${rawData.length} bytes, text: "${textData.substring(0, 100)}"`);
                   
                   if (textData.startsWith("FILE_ID:")) {
                       currentDownloadFileId = textData.substring(8).trim();
@@ -990,83 +1220,76 @@
                       fileTransferStartTime = Date.now();
                       window.currentChunkNumber = 0;
                       currentCSVContent = '';
-                      csvWriter = null;
                       
                       if (window.currentDownloadTimeout) {
                           clearTimeout(window.currentDownloadTimeout);
                       }
                       
-                      addDebugLog(`[FILE] ✅ FILE_ID received for: ${currentDownloadFileId} at ${timestamp}`);
+                      addDebugLog(`[FILE] ✅ FILE_ID received for: ${currentDownloadFileId}`);
                       updateDownloadProgress(currentDownloadFileId, 10, "Starting file transfer...");
                       
                       if (writeCharacteristic) {
-                          const ackMessage = 'ACK_FILE_ID';
-                          writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
-                          addDebugLog(`[ACK] Sent acknowledgment: ${ackMessage}`);
-                      } else {
-                          addDebugLog(`[ACK] ❌ Cannot send ACK - no write characteristic`);
+                          writeCharacteristic.writeValue(new TextEncoder().encode('ACK_FILE_ID'));
+                          addDebugLog(`[ACK] Sent acknowledgment: ACK_FILE_ID`);
                       }
                       return;
                   }
                   
                   if (textData === "EOF") {
-                      addDebugLog(`[FILE] EOF received for file: ${currentDownloadFileId} at ${timestamp}`);
+                      addDebugLog(`[FILE] EOF received for file: ${currentDownloadFileId}`);
                       
                       if (isFileTransferInProgress && currentDownloadFileId) {
                           addDebugLog(`[FILE] Transfer completed for ${currentDownloadFileId}. Total chunks: ${fileChunks.length}`);
-                          updateDownloadProgress(currentDownloadFileId, 95, "File transfer completed, creating CSV download...");
+                          updateDownloadProgress(currentDownloadFileId, 95, "File transfer completed...");
                           
                           if (window.currentDownloadTimeout) {
                               clearTimeout(window.currentDownloadTimeout);
                               window.currentDownloadTimeout = null;
                           }
                           
-                          setTimeout(() => {
-                              downloadCSVFile(currentDownloadFileId);
-                              isFileTransferInProgress = false;
-                              currentDownloadFileId = null;
-                              processDownloadQueue();
-                          }, 100);
-                      } else {
-                          addDebugLog(`[FILE] ⚠️ EOF received but no active transfer.`);
-                          setTimeout(() => {
-                              isFileTransferInProgress = false;
-                              currentDownloadFileId = null;
-                              processDownloadQueue();
-                          }, 1000);
+                          // Assemble the final CSV content
+                          if (currentCSVContent) {
+                              // Already have content from real-time writing
+                              addDebugLog(`[CSV] Using real-time assembled content (${currentCSVContent.length} chars)`);
+                              saveFileIOS(currentCSVContent, currentDownloadFileId);
+                          } else if (fileChunks.length > 0) {
+                              // Fallback: assemble from chunks
+                              let totalLength = fileChunks.reduce((sum, arr) => sum + arr.length, 0);
+                              let allData = new Uint8Array(totalLength);
+                              let offset = 0;
+                              for (let i = 0; i < fileChunks.length; i++) {
+                                  allData.set(fileChunks[i], offset);
+                                  offset += fileChunks[i].length;
+                              }
+                              currentCSVContent = new TextDecoder().decode(allData);
+                              addDebugLog(`[CSV] Assembled from chunks (${currentCSVContent.length} chars)`);
+                              saveFileIOS(currentCSVContent, currentDownloadFileId);
+                          } else {
+                              addDebugLog(`[FILE] ⚠️ No data received for ${currentDownloadFileId}`);
+                              alert(`No data received for ${currentDownloadFileId}`);
+                          }
+                          
+                          isFileTransferInProgress = false;
+                          currentDownloadFileId = null;
+                          processDownloadQueue();
                       }
                       return;
                   }
                   
                   if (isFileTransferInProgress && currentDownloadFileId) {
-                      const chunkData = new Uint8Array(value.buffer);
-                      fileChunks.push(chunkData);
+                      fileChunks.push(new Uint8Array(value.buffer));
                       window.currentChunkNumber++;
-                      const chunkText = new TextDecoder().decode(value.buffer);
-                      currentCSVContent += chunkText;
+                      currentCSVContent += new TextDecoder().decode(value.buffer);
                       
                       const totalBytes = fileChunks.reduce((sum, chunk) => sum + chunk.length, 0);
-                      addDebugLog(`[FILE] ✅ Chunk ${fileChunks.length} received for ${currentDownloadFileId}. Total: ${totalBytes} bytes`);
+                      addDebugLog(`[FILE] Chunk ${fileChunks.length} received, total: ${totalBytes} bytes`);
                       
                       if (writeCharacteristic) {
-                          const ackMessage = `ACK_CHUNK_${window.currentChunkNumber}`;
-                          writeCharacteristic.writeValue(new TextEncoder().encode(ackMessage));
-                          addDebugLog(`[ACK] Sent acknowledgment: ${ackMessage}`);
-                      } else {
-                          addDebugLog(`[ACK] ❌ Cannot send chunk ACK - no write characteristic`);
+                          writeCharacteristic.writeValue(new TextEncoder().encode(`ACK_CHUNK_${window.currentChunkNumber}`));
                       }
-                      
-                      const fileInfo = fileList.find(file => file.id === currentDownloadFileId);
-                      if (fileInfo && fileInfo.size > 0) {
-                          const progress = Math.min(90, 10 + (totalBytes / fileInfo.size * 80));
-                          updateDownloadProgress(currentDownloadFileId, progress, `Chunk ${fileChunks.length} received`);
-                      }
-                  } else {
-                      addDebugLog(`[FILE] ❌ Received data chunk but no active transfer.`);
                   }
-                  
                 } catch (error) {
-                  addDebugLog(`[FILE] Error processing notification: ${error}`);
+                  addDebugLog(`[FILE] Error: ${error}`);
                 }
               }
               else if (uuidMatches(uuid, 'abcd1002-0000-1000-8000-00805f9b0131')) {
@@ -1104,7 +1327,7 @@
             const seconds = now.getSeconds();
             const timeBuffer = new Uint8Array([year, month, day, hours, minutes, seconds]);
             await writeCharacteristic.writeValue(timeBuffer);
-            addDebugLog("Synchronized time to device (interval)");
+            addDebugLog("Synchronized time to device");
           }
         }
         await syncTimeToDevice();
@@ -1117,18 +1340,13 @@
         requestFileList();
         
         device.addEventListener('gattserverdisconnected', () => {
-          addDebugLog(`[BLE-CONNECTION] ❌ GATT server disconnected during operation`);
+          addDebugLog(`[BLE-CONNECTION] ❌ GATT server disconnected`);
           updateConnectionStatus(false);
           if (window.timeSyncInterval) clearInterval(window.timeSyncInterval);
           
           if (window.currentDownloadTimeout) {
             clearTimeout(window.currentDownloadTimeout);
             window.currentDownloadTimeout = null;
-          }
-          
-          if (isFileTransferInProgress || currentDownloadFileId) {
-            addDebugLog(`🚨 [TRANSFER] File transfer interrupted by disconnection!`);
-            updateDownloadProgress(currentDownloadFileId || 'unknown', 0, "❌ Transfer failed - Device disconnected");
           }
           
           isFileTransferInProgress = false;
@@ -1141,7 +1359,7 @@
           if (device && device.gatt) {
             const connected = device.gatt.connected;
             if (!connected && isConnected) {
-              addDebugLog(`[BLE-CONNECTION] ⚠️ Connection lost detected in monitor`);
+              addDebugLog(`[BLE-CONNECTION] ⚠️ Connection lost detected`);
               updateConnectionStatus(false);
               updateFileStatus(LANGS[currentLang].fileStatusError, true);
             }
@@ -1164,28 +1382,20 @@
         if (!text || text.trim() === '' || text === '\u0000' || text.charCodeAt(0) === 0 ||
             text === 'null' || text === 'undefined' || text === 'NULL' || text === 'UNDEFINED' ||
             text === 'EOF' || text.startsWith("FILE_ID:") || text.length === 0) {
-            
-            addDebugLog("Received invalid file list data, completely ignored");
-            if (fileList.length > 0) {
-                addDebugLog("Already have file list data, keeping existing data unchanged");
-                return;
-            }
-            if (fileListRequestAttempts < maxFileListRequestAttempts) {
-                return;
-            }
+            addDebugLog("Received invalid file list data, ignored");
             return;
         }
         
         if (text === "SD_INIT_FAILED") {
             addDebugLog("SD card initialization failed");
-            updateFileStatus("SD card initialization failed, please check SD card", true);
+            updateFileStatus("SD card initialization failed", true);
             fileListRequestInProgress = false;
             return;
         }
         
         if (text === "NO_ROOT_DIR") {
             addDebugLog("Root directory not found");
-            updateFileStatus("Root directory not found, SD card may not be formatted correctly", true);
+            updateFileStatus("Root directory not found", true);
             fileListRequestInProgress = false;
             return;
         }
@@ -1212,7 +1422,7 @@
         }
         
         if (files.length === 0) {
-            addDebugLog("Parsed file list is empty, ignored");
+            addDebugLog("Parsed file list is empty");
             return;
         }
         
@@ -1240,11 +1450,10 @@
             fileList = newFileList;
             console.log("Final file list:", fileList);
             updateFileListUI();
-            addDebugLog(`File list update completed, currently have ${fileList.length} files`);
+            addDebugLog(`File list update completed: ${fileList.length} files`);
         }
       } catch (error) {
         addDebugLog(`Error parsing file list: ${error}`);
-        console.error("Error parsing file list:", error);
         updateFileStatus(LANGS[currentLang].fileStatusError, true);
         fileListRequestInProgress = false;
       }
@@ -1278,7 +1487,7 @@
           
           setTimeout(() => {
             if (!fileListReceived && fileListRequestAttempts < maxFileListRequestAttempts) {
-              addDebugLog(`No file list response received, trying again (${fileListRequestAttempts}/${maxFileListRequestAttempts})`);
+              addDebugLog(`No file list response, trying again`);
               fileListRequestInProgress = false;
               requestFileList();
             } else if (!fileListReceived) {
@@ -1289,8 +1498,7 @@
           }, 3000);
         })
         .catch(err => {
-          addDebugLog(`File list request failed: ${command} - ${err}`);
-          console.error("File list request failed:", err);
+          addDebugLog(`File list request failed: ${err}`);
           updateFileStatus(LANGS[currentLang].fileStatusError, true);
           fileListRequestInProgress = false;
         });
@@ -1381,7 +1589,7 @@
       updateFileListUI();
       updateDownloadButtonState();
       addDebugLog("Page loaded successfully");
-      addDebugLog("Using case-insensitive UUID matching for cross-platform compatibility");
+      addDebugLog("Using case-insensitive UUID matching + iOS-friendly file saving");
       
       if (window.navigator.standalone) {
         addDebugLog("PWA: Running as standalone app on iOS");
@@ -1411,6 +1619,7 @@
         fileChunks = [];
         isFileTransferInProgress = false;
         currentDownloadFileId = null;
+        currentCSVContent = '';
         window.lastRequestedFile = file.name;
         
         const encoder = new TextEncoder();
@@ -1542,12 +1751,14 @@
 
     function askForDownload() {
       fileChunks = [];
+      currentCSVContent = '';
       const encoder = new TextEncoder();
       const data = encoder.encode("DOWNLOAD_CSV");
       if (writeCharacteristic) {
         writeCharacteristic.writeValue(data)
           .then(() => {
             console.log("Download command sent");
+            addDebugLog("CSV download command sent to device");
           })
           .catch(err => {
             console.error("Download command failed:", err);
@@ -1610,119 +1821,6 @@
         tempData.datasets[0].data.shift();
       }
       tempChart.update();
-    }
-
-    function downloadFile() {
-      if (fileChunks.length === 0) {
-        alert('No data received!');
-        addDebugLog('[FILE] ERROR: No chunks to assemble');
-        return;
-      }
-      
-      addDebugLog(`[FILE] Assembling file from ${fileChunks.length} chunks`);
-      let totalLength = fileChunks.reduce((sum, arr) => sum + arr.length, 0);
-      addDebugLog(`[FILE] Total data size: ${totalLength} bytes`);
-      
-      let allData = new Uint8Array(totalLength);
-      let offset = 0;
-      for (let i = 0; i < fileChunks.length; i++) {
-        const chunk = fileChunks[i];
-        allData.set(chunk, offset);
-        offset += chunk.length;
-        addDebugLog(`[FILE] Chunk ${i+1}/${fileChunks.length}: ${chunk.length} bytes`);
-      }
-      
-      let fileText = new TextDecoder().decode(allData);
-      addDebugLog(`[FILE] File text length: ${fileText.length} characters`);
-      addDebugLog(`[FILE] First 100 chars: ${fileText.substring(0, 100)}`);
-      
-      let blob = new Blob([fileText], {type: 'text/csv'});
-      let url = URL.createObjectURL(blob);
-      let a = document.createElement('a');
-      a.href = url;
-      a.download = 'temperature_data.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      addDebugLog('[FILE] Download completed successfully');
-      fileChunks = [];
-    }
-
-    function downloadCSVFile(fileId) {
-      if (!currentCSVContent || currentCSVContent.length === 0) {
-        addDebugLog(`[CSV] ❌ ERROR: No CSV content to download for ${fileId}`);
-        
-        if (fileChunks.length > 0) {
-          addDebugLog(`[CSV] 🔄 Attempting fallback reconstruction from ${fileChunks.length} chunks`);
-          let totalLength = fileChunks.reduce((sum, arr) => sum + arr.length, 0);
-          let allData = new Uint8Array(totalLength);
-          let offset = 0;
-          for (let i = 0; i < fileChunks.length; i++) {
-            const chunk = fileChunks[i];
-            allData.set(chunk, offset);
-            offset += chunk.length;
-          }
-          currentCSVContent = new TextDecoder().decode(allData);
-          addDebugLog(`[CSV] 🔄 Fallback reconstruction successful: ${currentCSVContent.length} characters`);
-        } else {
-          alert('No CSV data received for file: ' + fileId);
-          return;
-        }
-      }
-      
-      addDebugLog(`[CSV] 📊 Creating CSV download for ${fileId}: ${currentCSVContent.length} characters`);
-      const lines = currentCSVContent.split('\n').filter(line => line.trim() !== '');
-      addDebugLog(`[CSV] 📊 CSV validation: ${lines.length} lines detected`);
-      
-      const blob = new Blob([currentCSVContent], {type: 'text/csv;charset=utf-8'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileId.endsWith('.csv') ? fileId : (fileId + '.csv');
-      a.setAttribute('download', a.download);
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      addDebugLog(`[CSV] ✅ CSV download triggered: ${a.download} (${blob.size} bytes)`);
-      currentCSVContent = '';
-      fileChunks = [];
-      updateDownloadProgress(fileId, 100, `CSV download completed: ${lines.length} rows`);
-    }
-
-    function downloadCompletedFile(fileId) {
-      if (fileChunks.length === 0) {
-        addDebugLog(`[FILE] ERROR: No chunks to assemble for ${fileId}`);
-        alert('No data received for file: ' + fileId);
-        return;
-      }
-      
-      addDebugLog(`[FILE] Assembling ${fileId} from ${fileChunks.length} chunks`);
-      let totalLength = fileChunks.reduce((sum, arr) => sum + arr.length, 0);
-      let allData = new Uint8Array(totalLength);
-      let offset = 0;
-      for (let i = 0; i < fileChunks.length; i++) {
-        const chunk = fileChunks[i];
-        allData.set(chunk, offset);
-        offset += chunk.length;
-      }
-      let fileText = new TextDecoder().decode(allData);
-      let blob = new Blob([fileText], {type: 'text/csv'});
-      let url = URL.createObjectURL(blob);
-      let a = document.createElement('a');
-      a.href = url;
-      a.download = fileId || 'downloaded_file.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      addDebugLog(`[FILE] Download completed: ${fileId}`);
-      fileChunks = [];
-      updateDownloadProgress(fileId, 100, "Download completed");
     }
   </script>
 </body>
